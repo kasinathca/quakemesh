@@ -1,0 +1,4 @@
+# Android Studio normally manages sdk.dir in local.properties.
+# Add the following two QuakeMesh lines to your local.properties file.
+QUAKEMESH_API_BASE_URL=https://YOUR_API_ID.execute-api.ap-south-1.amazonaws.com/prod
+QUAKEMESH_API_KEY=replace-with-demo-write-api-key

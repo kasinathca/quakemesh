@@ -1,0 +1,9 @@
+{
+  "schema_version":"1.0",
+  "scenarios":[
+    {"id":"EXP-N01","cli":"isolated","expected":"NO_CONFIRMATION","purpose":"single-device false-positive suppression"},
+    {"id":"EXP-N02","cli":"same-cell","expected":"NO_CONFIRMATION","purpose":"same-area device-count is insufficient without spatial diversity"},
+    {"id":"EXP-P01","cli":"distributed","expected":"CONFIRMATION","purpose":"geographically diverse correlated trigger path"},
+    {"id":"EXP-P02","cli":"degraded","expected":"CONDITIONAL_CONFIRMATION","purpose":"packet loss and jitter robustness"}
+  ]
+}

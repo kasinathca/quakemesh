@@ -1,0 +1,38 @@
+# Python
+.venv/
+.venv-cdk/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+
+# Runtime/build artifacts
+artifacts/*
+!artifacts/.gitkeep
+*.db
+*.db-shm
+*.db-wal
+cdk.out/
+aws/infrastructure/cdk.out/
+
+# Credentials / generated account config
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+!docs/examples/*.crt
+android/local.properties
+android/app/google-services.json
+dashboard/config.aws.js
+artifacts/runtime-config.json
+
+# IDE/OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Release bundles
+*.zip
+*.sha256

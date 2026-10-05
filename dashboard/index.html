@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>QuakeMesh Operations</title>
+  <link rel="icon" href="data:," />
+  <link rel="preconnect" href="https://unpkg.com" crossorigin>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<header><div><h1>QuakeMesh</h1><p>Experimental distributed corroboration console</p></div><div class="header-state"><span id="connectionDetail">Waiting for API</span><span id="mode" class="pill">connecting</span></div></header>
+<main>
+  <div class="scope-note" role="note"><strong>Academic prototype.</strong> A confirmed event means configured experimental corroboration rules passed; it is not an official earthquake warning.</div>
+  <section class="metrics">
+    <article><span>API</span><strong id="apiState">—</strong></article>
+    <article><span>Events</span><strong id="eventCount">0</strong></article>
+    <article><span>Confirmed</span><strong id="confirmedCount">0</strong></article>
+    <article><span>Alerts</span><strong id="alertCount">0</strong></article>
+  </section>
+  <section class="panel scenario-panel" aria-labelledby="scenarioTitle">
+    <div class="panel-title"><div><h2 id="scenarioTitle">Scenario Lab</h2><p>Run deterministic virtual-phone experiments against the active local runtime.</p></div><span id="runId">No active run</span></div>
+    <form id="scenarioForm" class="scenario-controls">
+      <label>Scenario<select id="scenarioSelect" name="scenario"><option value="isolated">Isolated</option><option value="same-cell">Same cell</option><option value="distributed" selected>Distributed</option><option value="degraded">Degraded network</option></select></label>
+      <label>Virtual devices<input id="deviceCount" name="devices" type="number" min="1" max="500" value="25"></label>
+      <label>Seed<input id="scenarioSeed" name="seed" type="number" value="42"></label>
+      <button id="startScenario" type="submit">Start scenario</button>
+    </form>
+    <div id="scenarioError" class="inline-error" role="alert" hidden></div>
+    <div class="run-summary" aria-live="polite">
+      <div><span>Run status</span><strong id="runStatus">IDLE</strong></div><div><span>Expected</span><strong id="runExpected">—</strong></div><div><span>Observed</span><strong id="runObserved">—</strong></div><div><span>Last update</span><strong id="runUpdated">—</strong></div>
+    </div>
+    <div class="scenario-grid">
+      <div><h3>Correlation gates</h3><div id="gateList" class="gate-list empty">Run a scenario to see server-evaluated gates.</div></div>
+      <div><h3>Execution timeline</h3><ol id="timeline" class="timeline"><li class="empty">No stage telemetry yet.</li></ol></div>
+    </div>
+  </section>
+  <section class="grid">
+    <article class="panel map-panel"><div class="panel-title"><h2>Detection Footprint / Warning Frontier</h2><span>OpenStreetMap</span></div><div id="map"><div class="map-fallback">Map loads when Leaflet/OSM are reachable. Event data remains available below.</div></div></article>
+    <article class="panel"><div class="panel-title"><h2>Latest Event</h2></div><div id="latest" class="empty">No event yet.</div></article>
+  </section>
+  <section class="panel"><div class="panel-title"><h2>Event History</h2><span id="lastRefresh">—</span></div><div class="table-wrap"><table><thead><tr><th>Event</th><th>Status</th><th>Devices</th><th>Cells</th><th>Version</th><th>Updated</th></tr></thead><tbody id="eventsBody"></tbody></table></div></section>
+  <section class="panel"><div class="panel-title"><h2>Alert Deliveries</h2></div><div class="table-wrap"><table><thead><tr><th>Device</th><th>Event</th><th>Version</th><th>Status</th><th>Time</th></tr></thead><tbody id="alertsBody"></tbody></table></div></section>
+</main>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
