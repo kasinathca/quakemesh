@@ -2,9 +2,12 @@ import json,re
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 
-def test_json_contracts_parse_and_are_v1():
+def test_json_contracts_parse_and_use_explicit_versions():
     for p in (ROOT/"schemas").glob("*.json"):
-        data=json.loads(p.read_text());assert "1.0" in (data.get("$id","")+json.dumps(data))
+        data=json.loads(p.read_text())
+        serialized=data.get("$id","")+json.dumps(data)
+        expected="2.0" if p.name.startswith("v2-") else "1.0"
+        assert expected in serialized
 
 def test_iot_policy_is_thing_scoped():
     s=(ROOT/"aws/infrastructure/stack.py").read_text()
@@ -32,11 +35,11 @@ def test_secret_paths_are_gitignored():
 
 def test_windows_validator_scopes_ruff_and_checks_native_exit_codes():
     text = (ROOT / "scripts" / "validate.ps1").read_text(encoding="utf-8")
-    assert '"-m", "ruff", "check"' in text
-    assert '"src", "local_runtime", "simulator", "aws", "scripts", "tests"' in text
+    assert "-m ruff check src local_runtime simulator aws scripts tests" in text
+    assert "--select E4,E7,E9,F" in text
     assert 'ruff check .' not in text.lower()
     assert "$LASTEXITCODE -ne 0" in text
-    assert "all gates passed" in text.lower()
+    assert "PASS, $script:Skipped SKIP, 0 FAIL" in text
 
 
 def test_setup_checks_native_process_exit_codes():

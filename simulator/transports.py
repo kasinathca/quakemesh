@@ -34,7 +34,10 @@ class HttpTransport:
             method="POST",
         )
         with urllib.request.urlopen(request, timeout=self.timeout) as response:
-            return json.loads(response.read().decode())
+            decoded = json.loads(response.read().decode())
+            if decoded.get("schema_version") == "2.0" and "data" in decoded:
+                return decoded["data"]
+            return decoded
 
     def heartbeat(self, device_id: str, payload: dict) -> dict:
         return self._post("/v1/devices/heartbeat", payload)

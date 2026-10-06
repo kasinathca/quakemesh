@@ -6,7 +6,19 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-IGNORE_PARTS = {".git", ".venv", ".venv-cdk", "__pycache__", "artifacts", "cdk.out", ".pytest_cache"}
+IGNORE_PARTS = {
+    ".git",
+    ".venv",
+    ".venv-cdk",
+    "__pycache__",
+    "artifacts",
+    "cdk.out",
+    ".pytest_cache",
+    "node_modules",
+    "dist",
+    "playwright-report",
+    "test-results",
+}
 PATTERNS = [
     ("AWS access key", re.compile(r"(?:AKIA|ASIA)[A-Z0-9]{16}")),
     ("private key", re.compile("-----BEGIN " + "(?:RSA |EC )?PRIVATE KEY-----")),

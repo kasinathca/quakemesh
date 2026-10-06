@@ -1,71 +1,87 @@
-# QuakeMesh V2 completion report
+# QuakeMesh V2 local control-plane completion report
 
-Report date: 2026-10-06 (Asia/Calcutta). This is an interim evidence report; QuakeMesh V2 is **not complete**.
+Report date: 2026-10-06 (Asia/Calcutta)
 
-## Executive status
+## Outcome
 
-| Area | Status | Evidence |
-|---|---|---|
-| V1 domain behavior | VERIFIED locally | 50 tests; real H3 adapter included |
-| Dashboard launcher regression | VERIFIED locally | nested PowerShell integer-binding smoke test |
-| Scenario run/state model | VERIFIED locally | persistence/unit tests and live HTTP runs |
-| Required scenarios | VERIFIED locally | isolated rejected, same-cell rejected, distributed confirmed, degraded conditionally confirmed |
-| Stage telemetry | PARTIALLY VERIFIED | live schema/motion/evidence/correlation/event stages in local mode |
-| Dashboard Scenario Lab | PARTIALLY VERIFIED | browser start-to-completion flow, responsive narrow view, zero console warnings/errors |
-| Full dashboard information architecture | NOT VERIFIED | remaining Events/Devices/Infrastructure/Experiments/Session views not implemented |
-| Android V2 | NOT VERIFIED | existing sensor/FCM source only; no build or redesign evidence |
-| AWS strict ephemeral session | NOT VERIFIED | design documents exist; legacy retained S3 and non-session stack remain |
-| AWS live integration | BLOCKED BY EXTERNAL CREDENTIAL | no authenticated account/session was requested or used |
-| Firebase live delivery | BLOCKED BY EXTERNAL CREDENTIAL | no Firebase project/device authorization |
-| Git hygiene | NOT VERIFIED | this delivered checkout has no `.git` metadata |
+The V2 local control plane, authoritative scenario engine, observability contract, and professional dashboard are complete and verified on the current Windows host. This phase did not redesign Android or deploy AWS.
 
-## Implemented in this increment
+## Architecture decisions
 
-- Controlled V2 audit, requirements, architecture, lifecycle, UX, scenario, observability, API, test, security, runbook, traceability, first-run, AWS account, and cost-safety documents.
-- Safe nested PowerShell launching through encoded parameter splatting.
-- Detect-first Windows setup and stale-venv recovery with native Python 3.12.
-- Scenario run/stage SQLite schema, deterministic run IDs, required catalog, loopback-only start/read API, and run-aware simulator transport.
-- Separation of controlled-run evidence from physical evidence.
-- Responsive Scenario Lab with authoritative status, observed/expected result, gate counts, and stage timeline.
+- `ScenarioControlService` is the single controlled-run coordinator. Dashboard and PowerShell CLI start through `POST /v1/demo/scenario-runs`; tests invoke the same service. Controlled CLI traffic always has a run ID.
+- SQLite `BEGIN IMMEDIATE` atomically creates a run and enforces one QUEUED/RUNNING scenario.
+- Devices, evidence, events, targeting, and alerts are partitioned by physical/scenario provenance and optional scenario run ID.
+- Catalog-owned parameter specifications normalize real fleet behavior and reject unknown, conflicting, mistyped, or out-of-range values.
+- Stage records are persistent server telemetry. SSE streams their global cursor and per-run sequence; REST remains recovery truth.
+- Local alert targeting records `TARGETED`, not delivery. ACK is idempotent and stage-producing only on the first transition.
+- Reset is scenario-only and transactional. Export is privacy-safe JSON under the run's local artifact directory.
+- Cancellation is omitted because the current synchronous fleet cannot guarantee safe interruption.
+- The UI is a static React/strict-TypeScript/Vite build with bundled Leaflet and no CDN JavaScript/CSS dependency.
 
-## Verification evidence
+## Principal files changed
 
-`scripts/validate.ps1` result:
+- Control plane: `local_runtime/app.py`, `contracts.py`, `errors.py`, `repository.py`, `scenario_catalog.py`, `scenarios.py`, `service.py`.
+- Shared provenance model: `src/quakemesh_core/models.py`.
+- Simulator/CLI: `simulator/fleet.py`, `simulator/transports.py`, `scripts/run_scenario.ps1`, `scripts/run_dashboard.ps1`, `scripts/run_e2e_backend.ps1`.
+- Dashboard: `dashboard/package.json`, `package-lock.json`, TypeScript/Vite/ESLint/Playwright configuration, and feature modules under `dashboard/src/`.
+- Tests/contracts: `tests/test_v2_control_plane.py`, updated dashboard/repository contracts, V2 schemas, `scripts/validate_schemas.py`, and expanded `scripts/validate.ps1`.
+- Documentation: V2 API, scenario, observability, dashboard, architecture, traceability, changelog, README, and NEXT_STEPS.
 
-```text
-Python compilation                  PASSED
-pytest                              50 passed
-Ruff critical checks               PASSED
-secret scan                         PASSED
-PowerShell process-launch smoke     PASSED
-repository structural audit         PASSED
-```
+## Verification results
 
-Local HTTP results with Python 3.12, FastAPI, SQLite, and H3 4.5.0:
+`scripts/validate.ps1` completed with **14 PASS, 3 explicit SKIP, 0 FAIL**.
 
-| Scenario | Expected | Observed | Result |
-|---|---|---|---|
-| isolated | NO_CONFIRMATION | NO_CONFIRMATION | VERIFIED |
-| same-cell | NO_CONFIRMATION | NO_CONFIRMATION | VERIFIED |
-| distributed | CONFIRMATION | CONFIRMATION | VERIFIED |
-| degraded, seed 42 | CONDITIONAL | CONFIRMATION | VERIFIED for this deterministic run |
+| Gate | Result |
+|---|---|
+| Python compilation | PASS |
+| pytest | PASS — 58 tests (previous 50 retained) |
+| Ruff critical repository rules | PASS |
+| Ruff E4/E7/E9/F on V2-modified modules | PASS |
+| secret scan | PASS |
+| seven JSON schemas + V2 privacy/reference audit | PASS |
+| PowerShell launch test | PASS |
+| `npm ci --ignore-scripts` | PASS — 0 audit vulnerabilities reported by install |
+| strict TypeScript | PASS |
+| ESLint with zero warnings | PASS |
+| Vitest | PASS — 2 files, 4 tests |
+| production Vite build | PASS |
+| Playwright | PASS — 2 tests |
+| repository audit | PASS |
 
-Browser validation started a distributed run from the UI and visibly reached `COMPLETED`, `CONFIRMATION`, 8/4 unique devices, 4/3 distinct H3 cells, an event footprint/frontier, and local alert records. Browser console warning/error query returned an empty list.
+Python coverage verifies atomic concurrent-start rejection, dashboard/CLI record parity, physical/run isolation, spatially compatible run separation, truthful negative stages, deterministic degraded parameters, targeted alert provenance, idempotent ACK, reset refusal/preservation, export privacy, V2 envelopes/errors, and resumable stage ordering.
 
-## Known limitations and next engineering gates
+Browser E2E verifies:
 
-1. Implement remaining dashboard views, error-envelope parity, reset/export, and automated browser E2E.
-2. Redesign/build/test the Android app and implement ACK contracts.
-3. Replace the legacy AWS stack with session identity, ownership tags, strict deletion, explicit logs, Scheduler TTL cleanup, and a zero-resource verifier.
-4. Add project-local locked CDK tooling and synth/policy tests.
-5. Perform live AWS and FCM validation only with user-provided authentication and explicit cloud-session start.
+1. isolated produces no confirmation and fails device diversity;
+2. same-cell produces no confirmation and fails spatial diversity;
+3. distributed confirms and exposes event, footprint, frontier, and alerts;
+4. ACK reaches backend/dashboard;
+5. run evidence exports;
+6. API loss produces a disconnected state without deleting the prior snapshot;
+7. no QuakeMesh-attributable browser console warning/error occurs;
+8. 1280×720, 1366×768, 1440×900, 1920×1080, and 390×844 have no page-level horizontal overflow.
 
-## Current commands
+## Evidence locations
 
-```powershell
-.\scripts\setup_windows.ps1
-.\scripts\validate.ps1
-.\scripts\demo_local.ps1 -Scenario distributed -Devices 25
-```
+- `artifacts/e2e/distributed-scenario.png`
+- `artifacts/e2e/narrow-overview.png`
+- `artifacts/session_exports/local/<run_id>/run-evidence.json`
+- `dashboard/playwright-report/` when the local report is retained
 
-The V2 `session_start.ps1`/`session_stop.ps1` commands remain design targets and must not be presented as available until implemented and verified.
+## Remaining risks
+
+- Formal accessibility testing with assistive technology was not performed; automated semantic/focus/responsive checks are not a complete audit.
+- Performance and load limits were not measured.
+- SSE is an in-process local stream over SQLite; AWS must implement contract parity rather than reuse this transport directly.
+- Local control is intentionally loopback-only and is not an internet-facing authorization design.
+- This checkout has no `.git` metadata, so commit history/hygiene could not be verified.
+
+## Explicitly not verified
+
+- Android V2 UI, build, emulator, or physical-device behavior.
+- AWS ephemeral-session ownership, TTL cleanup, strict teardown, synthesis, or live deployment.
+- AWS parity for V2 envelopes, provenance, telemetry, reset, or export.
+- AWS IoT delivery, DynamoDB records, CloudWatch behavior, or costs.
+- Live FCM delivery or physical phone receipt.
+
+Those areas remain future phases and must not be inferred from the local completion result.

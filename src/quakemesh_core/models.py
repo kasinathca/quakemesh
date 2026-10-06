@@ -62,6 +62,8 @@ class EventRecord:
     warning_frontier: list[str] = field(default_factory=list)
     evidence_ids: list[str] = field(default_factory=list)
     version: int = 1
+    provenance_type: str = "physical"
+    scenario_run_id: str | None = None
 
     def as_dict(self) -> dict[str, Any]:
         data = asdict(self)

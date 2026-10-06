@@ -1,5 +1,7 @@
 # QuakeMesh V1 — Release Validation Report
 
+> **V2 local validation update — 2026-10-06:** the current Windows host completed `scripts/validate.ps1` with **14 PASS, 3 explicit SKIP, 0 FAIL**. Results include 58 Python tests, strict TypeScript, zero-warning ESLint, 4 Vitest tests, a production Vite build, and 2 Playwright E2E tests. Android V2, AWS live deployment/session cleanup, and FCM remain explicitly skipped. The remainder of this file is retained as the historical V1 packaging report; the current authoritative phase evidence is `docs/v2/QM-V2-COMPLETION-REPORT.md`.
+
 **Release:** 1.0.1  
 **Validation date:** 2026-09-13  
 **Target cloud region:** `ap-south-1`  

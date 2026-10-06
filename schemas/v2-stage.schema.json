@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://quakemesh.local/schemas/v2-stage.schema.json?schema_version=2.0",
+  "title": "QuakeMesh V2 scenario stage",
+  "type": "object",
+  "required": ["stage_id", "run_id", "sequence", "occurred_at_ms", "code", "component", "severity", "status", "message", "data"],
+  "properties": {
+    "stage_id": { "type": "integer", "minimum": 1 },
+    "run_id": { "type": "string" },
+    "sequence": { "type": "integer", "minimum": 1 },
+    "occurred_at_ms": { "type": "integer" },
+    "code": { "type": "string" },
+    "component": { "type": "string" },
+    "severity": { "enum": ["info", "warning", "error"] },
+    "status": { "type": "string" },
+    "message": { "type": "string" },
+    "data": { "type": "object" },
+    "device_id": { "type": ["string", "null"] },
+    "event_id": { "type": ["string", "null"] },
+    "alert_id": { "type": ["string", "null"] },
+    "duration_ms": { "type": ["integer", "null"], "minimum": 0 }
+  }
+}

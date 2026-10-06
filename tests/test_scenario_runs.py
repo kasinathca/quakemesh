@@ -7,9 +7,9 @@ from quakemesh_core.correlation import canonicalize_trigger
 
 def test_scenario_run_and_stage_round_trip(tmp_path):
     repo=SQLiteRepository(tmp_path/"runs.db")
-    run=create_run(repo,"isolated",5,17,source="test",parameters={"note":"deterministic"})
+    run=create_run(repo,"isolated",5,17,source="test")
     assert run["status"]=="QUEUED" and run["expected_result"]=="NO_CONFIRMATION"
-    assert run["parameters"]=={"note":"deterministic"} and run["stages"][0]["code"]=="RUN_REQUESTED"
+    assert run["parameters"]=={"devices":5,"seed":17} and run["stages"][0]["code"]=="RUN_REQUESTED"
     repo.update_scenario_run(run["run_id"],status="COMPLETED",observed_result="NO_CONFIRMATION",event_ids=[])
     updated=repo.get_scenario_run(run["run_id"])
     assert updated["status"]=="COMPLETED" and updated["observed_result"]=="NO_CONFIRMATION"
@@ -23,6 +23,9 @@ def test_scenario_run_rejects_unsafe_inputs(tmp_path):
         try:create_run(repo,*args,source="test")
         except ValueError:pass
         else:raise AssertionError(f"accepted invalid scenario arguments: {args}")
+    try:create_run(repo,"isolated",5,1,source="test",parameters={"note":"ignored"})
+    except ValueError:pass
+    else:raise AssertionError("accepted an unsupported parameter")
 
 def test_scenario_evidence_is_isolated_from_physical_evidence(tmp_path):
     repo=SQLiteRepository(tmp_path/"runs.db");cfg=DetectionConfig(h3_device_resolution=7,h3_correlation_resolution=7)
@@ -37,10 +40,13 @@ def test_execute_run_handles_trace_rows_without_results(tmp_path,monkeypatch):
     class FakeTransport:
         def __init__(self,*args,**kwargs):pass
         def close(self):pass
-    def fake_scenario(self,name):
+    def fake_heartbeat(self):
+        self.trace=[]
+    def fake_inject(self,name,parameters):
         self.trace=[{"kind":"trigger_dropped_by_simulator","result":None,"error":None}]
     monkeypatch.setattr("local_runtime.scenarios.HttpTransport",FakeTransport)
-    monkeypatch.setattr("local_runtime.scenarios.Fleet.scenario",fake_scenario)
+    monkeypatch.setattr("local_runtime.scenarios.Fleet.heartbeat_all",fake_heartbeat)
+    monkeypatch.setattr("local_runtime.scenarios.Fleet.inject_scenario",fake_inject)
     execute_run(repo,run["run_id"],"http://127.0.0.1:1")
     finished=repo.get_scenario_run(run["run_id"])
     assert finished["status"]=="COMPLETED" and finished["observed_result"]=="NO_CONFIRMATION"

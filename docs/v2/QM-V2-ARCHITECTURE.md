@@ -7,21 +7,21 @@
 - **Evaluation truth:** simulator-only labels and expected results; never accepted by ingestion.
 - **Event:** authoritative server-side corroboration state.
 - **Alert delivery:** target and transport outcome, separate from event truth.
-- **Scenario run:** controlled experiment metadata and stage telemetry, separate from events.
+- **Scenario run:** controlled experiment metadata and stage telemetry. Scenario events retain the run ID.
 - **Cloud session:** owned infrastructure metadata and expiry, separate from application state.
 
 ## Local
 
 ```mermaid
 flowchart LR
-  CLI[CLI / Dashboard / Android Demo Lab] --> C[Scenario control]
+  CLI[PowerShell CLI / Dashboard / future Android] --> C[ScenarioControlService]
   C --> F[Virtual-phone fleet]
   P[Physical phone sensors] --> API[FastAPI]
   F --> API
   API --> D[Shared domain engine]
   D --> DB[(SQLite)]
   DB --> API
-  API --> UI[Dashboard]
+  API -->|V2 REST snapshots + SSE stages| UI[React dashboard]
   API --> A[Android alert/ACK]
 ```
 
@@ -75,3 +75,7 @@ sequenceDiagram
 ```
 
 Local and AWS adapters must implement the same public schemas; storage and transport details may differ.
+
+Local correlation is partitioned by `(provenance_type, scenario_run_id)`. Physical records use `physical` plus a null run ID; every controlled run uses `scenario` plus its run ID. The same partition applies to active-event merging and alert targeting. SQLite `BEGIN IMMEDIATE` makes the one-active-run policy atomic.
+
+The current local runner has no safe interruption primitive, so the public contract intentionally omits cancellation rather than presenting a non-functional control.

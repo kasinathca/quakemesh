@@ -4,7 +4,7 @@ Audit date: 2026-10-05. Scope: all source, test, schema, PowerShell, dashboard, 
 
 ## Baseline evidence
 
-- Initial Python domain baseline: **41 passed, 1 skipped**. After rebuilding with native Python 3.12 and real H3, the current validation result is **50 passed**.
+- Initial Python domain baseline: **41 passed, 1 skipped**. After native Python 3.12/H3 recovery the intermediate result was **50 passed**; the completed local V2 phase now reports **58 passed**.
 - The delivered `.venv` pointed to a removed Python 3.10 installation. Setup now detects and rebuilds stale native-Windows environments; MSYS2 Python is rejected because it creates an incompatible layout.
 - Git verification is unavailable because this copy has no `.git` directory.
 - Local FastAPI and dashboard browser flows were subsequently validated. Live AWS, Firebase, and Android builds remain unverified.

@@ -1,16 +1,28 @@
 from pathlib import Path
 
-ROOT=Path(__file__).resolve().parents[1]
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def dashboard_source() -> str:
+    return "\n".join(
+        path.read_text(encoding="utf-8")
+        for path in (ROOT / "dashboard" / "src").rglob("*.tsx")
+    ) + (ROOT / "dashboard" / "src" / "api" / "client.ts").read_text(encoding="utf-8")
+
 
 def test_dashboard_scenario_lab_uses_authoritative_run_api():
-    html=(ROOT/"dashboard/index.html").read_text(encoding="utf-8")
-    js=(ROOT/"dashboard/app.js").read_text(encoding="utf-8")
-    assert 'id="scenarioForm"' in html and 'id="timeline"' in html and 'id="gateList"' in html
-    assert 'post("/v1/demo/scenario-runs"' in js
-    assert '/v1/scenario-runs/${encodeURIComponent(activeRunId)}' in js
-    assert 'CORRELATION_EVALUATED' in js
+    source = dashboard_source()
+    assert "Scenario Lab" in source
+    assert 'request<ScenarioRun>("/v1/demo/scenario-runs"' in source
+    assert "/v1/scenario-runs/${encodeURIComponent(runId)}" in source
+    assert "DEVICE_DIVERSITY_GATE_EVALUATED" in source
+    assert "SPATIAL_DIVERSITY_GATE_EVALUATED" in source
+
 
 def test_dashboard_has_truthful_scope_and_accessible_status_regions():
-    html=(ROOT/"dashboard/index.html").read_text(encoding="utf-8")
-    assert "not an official earthquake warning" in html
-    assert 'aria-live="polite"' in html and 'role="alert"' in html
+    source = dashboard_source()
+    assert "Not an official warning system" in source
+    assert 'role="alert"' in source
+    assert 'role="status"' in source
+    assert "Waiting for data" in source

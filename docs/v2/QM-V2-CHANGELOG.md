@@ -1,5 +1,18 @@
 # QuakeMesh V2 changelog
 
+## 2026-10-06 — local control-plane completion
+
+- Converged dashboard and PowerShell scenario entry points on `ScenarioControlService` and authoritative run IDs.
+- Added atomic one-active-run enforcement, strongly validated effective parameters, and deterministic degraded-network behavior.
+- Partitioned devices, evidence, events, targeting, and alerts by physical/scenario provenance and scenario run ID.
+- Added the complete truthful stage vocabulary, per-run ordering, SSE resume cursor, and REST recovery snapshots.
+- Implemented V2 success/error envelopes, request IDs, local read/control endpoints, idempotent alert ACK, transactional scenario reset, and privacy-safe JSON evidence export.
+- Replaced misleading local delivery status with `TARGETED` and retained event/run provenance on alerts.
+- Rebuilt the dashboard as a feature-oriented React/strict-TypeScript/Vite application with bundled Leaflet and nine operational views.
+- Added Vitest and Playwright coverage for negative/positive scenarios, ACK, export, disconnect retention, console cleanliness, and five responsive sizes.
+- Expanded validation with PASS/SKIP reporting, targeted professional Ruff rules, schemas, npm lock verification, typecheck, lint, frontend tests/build, and optional browser E2E.
+- Kept Android V2, AWS ephemeral sessions/deployment, and live FCM explicitly unverified.
+
 ## 2026-10-05
 
 - Recorded the forensic V1 baseline, verification gaps, dependency state, and strict-ephemeral conflicts.

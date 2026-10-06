@@ -5,15 +5,16 @@ Academic cloud-computing project · AWS serverless backend · H3 spatial indexin
 
 > **Important scope statement:** QuakeMesh is an experimental software prototype. A “confirmed event” means the configured cloud corroboration rules were satisfied. It is **not** an official earthquake declaration, does not estimate magnitude or epicentre, and is not validated for life-safety use.
 
-> **V2 engineering status:** the local scenario-run/telemetry path and dashboard Scenario Lab are implemented and locally verified. Android V2 and strict ephemeral AWS sessions are not yet verified. See [`docs/v2/QM-V2-COMPLETION-REPORT.md`](docs/v2/QM-V2-COMPLETION-REPORT.md) for the evidence-backed status.
+> **V2 engineering status:** the local control plane, authoritative scenario engine, provenance isolation, structured telemetry stream, evidence export/reset/ACK contracts, and React operations dashboard are implemented and locally verified. Android V2, strict ephemeral AWS sessions, AWS deployment, and live FCM delivery are not verified. See [`docs/v2/QM-V2-COMPLETION-REPORT.md`](docs/v2/QM-V2-COMPLETION-REPORT.md).
 
 ## What is implemented
 
 This repository contains a complete V1 engineering baseline that can be demonstrated locally on one Windows PC and then deployed to AWS:
 
 - shared Python domain engine for schema validation, H3 canonicalization, spatial/temporal correlation and event lifecycle;
-- local FastAPI + SQLite runtime for an AWS-independent vertical slice;
-- deterministic Python virtual-phone fleet with repeatable scenarios, packet loss and jitter;
+- local FastAPI + SQLite V2 control plane with versioned envelopes, stable errors, request IDs, REST snapshots, and SSE stage telemetry;
+- one authoritative scenario service used by dashboard and PowerShell CLI, with atomic single-run policy and physical/scenario/run provenance isolation;
+- deterministic Python virtual-phone fleet with validated effective parameters, repeatable loss, jitter, and propagation;
 - AWS IoT Core MQTT/mTLS ingestion with Thing-scoped policy;
 - IoT Rules → Lambda ingress;
 - DynamoDB device state, TTL evidence, authoritative event state and alert-delivery records;
@@ -25,7 +26,7 @@ This repository contains a complete V1 engineering baseline that can be demonstr
 - EventBridge scheduled event resolution;
 - CloudWatch Lambda error alarms and X-Ray tracing;
 - encrypted/versioned S3 experiment archive;
-- browser dashboard with OpenStreetMap + H3-derived polygon overlays;
+- static React/strict-TypeScript/Vite operations dashboard with bundled Leaflet, H3 polygon overlays, nine feature views, logs, ACK, reset, and export;
 - Android foreground accelerometer/location client + FCM warning receiver;
 - AWS provisioning/deploy/destroy scripts;
 - JSON schemas, controlled documentation, experiment plan and requirement traceability;
@@ -142,6 +143,7 @@ For the local path:
 - Python 3.10+; **Python 3.12 recommended** because Lambda also uses Python 3.12;
 - PowerShell;
 - Git.
+- Node.js 20+ and npm for a missing/stale dashboard production build and frontend validation.
 
 For AWS deployment additionally:
 
@@ -210,7 +212,7 @@ Expected high-level behavior:
 | `distributed` | confirmation expected under default configuration |
 | `degraded` | conditional confirmation if enough evidence survives loss/jitter |
 
-Simulator truth is stored only in trace metadata under `artifacts/traces/`; it is not sent to the detector. Physical propagation changes `observed_at_ms`; simulated network jitter delays delivery instead of falsifying observation time.
+Simulator truth remains only in simulator trace metadata and is never sent to the detector. Controlled evidence carries its authoritative run ID. Physical propagation changes `observed_at_ms`; simulated network jitter delays delivery instead of falsifying observation time.
 
 ## AWS deployment
 
@@ -342,10 +344,13 @@ Use:
 Release validation includes:
 
 - Python byte-compilation;
-- pytest suite;
-- critical Ruff checks after dependencies are installed;
-- JSON/XML/JavaScript structural checks;
+- the complete pytest suite (including control-plane concurrency, provenance, export/reset/ACK, and V2 API integration);
+- repository-critical Ruff plus broader professional rules on V2-modified modules;
+- JSON Schema contract/privacy checks;
 - secret scan;
+- PowerShell launch tests;
+- locked npm install, strict TypeScript, ESLint, Vitest, and production Vite build;
+- Playwright local scenario/ACK/export/disconnect and responsive browser E2E when Chromium is installed;
 - repository contract audit.
 
 A real-H3 integration test is included. If `h3` is unavailable, that one test explicitly skips; after `scripts/setup.ps1` on your PC it should execute rather than skip.

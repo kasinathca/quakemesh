@@ -1,7 +1,11 @@
-# Observability specification
+# QuakeMesh V2 local observability
 
-Structured records use UTC epoch milliseconds and carry `run_id`, `event_id`, `device_id`, and `request_id` only when applicable. Severity is `debug`, `info`, `warning`, or `error`; user-visible messages contain no credentials, FCM tokens, certificate material, raw coordinates, or full payload dumps.
+Scenario stages are persistent structured telemetry and the single source for dashboard logs and timelines. JavaScript does not manufacture progress.
 
-Local mode persists bounded scenario stages in SQLite and streams or adaptively polls snapshots. AWS mode uses DynamoDB run/stage tables plus structured Lambda logs; log groups have explicit short retention and strict deletion. Metrics include counts and measured durations for ingestion, correlation, confirmation, dispatch, and scenario completion. A measurement records start/end source and does not imply network warning lead time.
+Each stage stores stage ID, run ID, per-run sequence, occurrence timestamp, component, severity, status, message, structured data, and optional device/event/alert IDs and measured duration. Per-run sequence begins at one and increases without duplicates. The global stage ID is the SSE resume cursor.
 
-Retention defaults: evidence 10 minutes, local review records until reset/export, AWS session records until teardown, CloudWatch logs no longer than the documented demo retention. Export redacts secrets and captures build/schema/session metadata.
+The SSE stream at `/v1/telemetry/stream` emits schema `2.0`, event type, monotonic sequence, emission timestamp, and the complete stage. It sends keep-alives when idle, accepts `Last-Event-ID` or `after`, and exposes no raw coordinates, tokens, credentials, or simulator ground-truth labels.
+
+REST remains authoritative for snapshot recovery. The dashboard refreshes at a five-second baseline, refreshes after stream events, retains its last good snapshot on failure, visibly marks disconnection, and recovers from REST when connectivity returns.
+
+Local alert state uses `TARGETED`, `QUEUED`, `SENT`, `ACKNOWLEDGED`, and `FAILED`. Current simulator-only targeting records `TARGETED`; it does not claim receipt by a physical phone.

@@ -1,21 +1,25 @@
-# Dashboard UX specification
+# QuakeMesh V2 dashboard UX
+
+The dashboard is a static React 19 + strict TypeScript + Vite application. Dependencies are locked and bundled. Leaflet is imported from the bundle; OpenStreetMap tiles are optional and a tile failure leaves verified geometry available as text.
 
 ## Information architecture
 
-Primary views: Overview, Live Map, Scenario Lab, Events, Devices, Alerts, Infrastructure, Experiments, and Session. A persistent header shows mode, connection, active run, build version, and—only in AWS mode—session expiry.
+Primary views are Overview, Live Map, Scenario Lab, Events, Devices, Alerts, Experiments, Infrastructure, and Session.
 
-## Scenario Lab
+- Overview distinguishes unavailable data from zero and shows mode, health, active run, counts, confirmation, and last update.
+- Scenario Lab renders catalog metadata, validated parameters, Start, Reset, Export, live status, expected/observed verdict, backend gates, full timeline, structured logs, and event-map evolution. Cancel is absent because cancellation is not safe.
+- Events exposes provenance, devices, H3 cells, footprint/frontier, evidence, lifecycle, and related alerts.
+- Devices exposes only safe coarse state and never tokens or raw coordinates.
+- Alerts explains `TARGETED`, shows known timestamps/failures, and performs idempotent ACK.
+- Experiments selects authoritative historical run records.
+- Infrastructure shows local runtime/configuration only; Session shows `LOCAL` without an AWS countdown.
 
-Controls select a catalog scenario, device count, seed, and supported degradation parameters. Start is disabled while a run is starting/running. The UI renders server-returned run and stage records. Gate cards show observed/required values and `passed`, `failed`, `pending`, or `unavailable`. Reset is explicit and separate from session teardown.
+Structured log columns are timestamp, component, stage, severity, device, run, and message. Search, severity filter, autoscroll, copy, and JSON export operate on backend telemetry rows.
 
-## State rules
+## Interaction and visual rules
 
-- Initial loading uses stable skeleton regions, not layout-shifting cards.
-- Empty state explains what creates data.
-- Disconnection freezes the last snapshot with its timestamp and retry state.
-- Errors contain a safe message, correlation/run ID when available, and recovery action.
-- No card invents a zero when data is unavailable.
+The UI uses system typography, an 8 px spacing rhythm, restrained blue accent, dense tables, square-to-small-radius surfaces, semantic color plus status text, visible keyboard focus, and no marketing language, neon gradients, glass effects, emoji controls, or oversized cards.
 
-## Visual/accessibility baseline
+The last verified snapshot remains visible during API/SSE loss with an explicit disconnected banner. A five-second REST refresh is the recovery baseline; stream events trigger targeted snapshot refresh rather than client-generated state.
 
-Use a restrained academic operations palette, system typography, 8px spacing rhythm, clear table density, and status icon + text. All actions are keyboard reachable, focus is visible, map data has a textual equivalent, dialogs restore focus, motion respects reduced-motion preferences, and common widths from 1280×720 to 1920×1080 avoid horizontal page overflow.
+Automated browser checks cover 1280×720, 1366×768, 1440×900, 1920×1080, and 390×844 with no page-level horizontal overflow. Evidence screenshots are written under `artifacts/e2e/`.

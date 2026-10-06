@@ -14,6 +14,10 @@ artifacts/*
 *.db-wal
 cdk.out/
 aws/infrastructure/cdk.out/
+dashboard/node_modules/
+dashboard/dist/
+dashboard/playwright-report/
+dashboard/test-results/
 
 # Credentials / generated account config
 *.pem

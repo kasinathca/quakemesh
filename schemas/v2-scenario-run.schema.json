@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://quakemesh.local/schemas/v2-scenario-run.schema.json",
+  "title": "QuakeMesh V2 scenario run",
+  "type": "object",
+  "required": ["run_id", "scenario", "source", "mode", "catalog_version", "seed", "devices", "status", "expected_result", "created_at_ms", "parameters", "event_ids"],
+  "properties": {
+    "run_id": { "type": "string", "pattern": "^QMR-" },
+    "scenario": { "enum": ["isolated", "same-cell", "distributed", "degraded"] },
+    "source": { "enum": ["dashboard", "cli", "android", "test"] },
+    "mode": { "const": "local" },
+    "catalog_version": { "const": "2.0" },
+    "seed": { "type": "integer", "minimum": 0 },
+    "devices": { "type": "integer", "minimum": 4, "maximum": 500 },
+    "status": { "enum": ["QUEUED", "RUNNING", "COMPLETED", "FAILED"] },
+    "expected_result": { "enum": ["NO_CONFIRMATION", "CONFIRMATION", "CONDITIONAL"] },
+    "observed_result": { "type": ["string", "null"] },
+    "created_at_ms": { "type": "integer" },
+    "started_at_ms": { "type": ["integer", "null"] },
+    "completed_at_ms": { "type": ["integer", "null"] },
+    "parameters": { "type": "object", "additionalProperties": { "type": "number" } },
+    "event_ids": { "type": "array", "items": { "type": "string" } },
+    "error": { "type": ["string", "null"] },
+    "stages": { "type": "array", "items": { "$ref": "v2-stage.schema.json" } }
+  }
+}

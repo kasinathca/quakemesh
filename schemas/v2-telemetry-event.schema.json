@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://quakemesh.local/schemas/v2-telemetry-event.schema.json",
+  "title": "QuakeMesh V2 telemetry stream event",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "event_type", "sequence", "emitted_at_ms", "data"],
+  "properties": {
+    "schema_version": { "const": "2.0" },
+    "event_type": { "const": "scenario.stage" },
+    "sequence": { "type": "integer", "minimum": 1 },
+    "emitted_at_ms": { "type": "integer" },
+    "data": { "$ref": "v2-stage.schema.json" }
+  }
+}
