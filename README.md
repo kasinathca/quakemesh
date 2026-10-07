@@ -292,7 +292,7 @@ The Android project is intentionally modern rather than based on stale templates
 - Firebase BoM 34.18.0;
 - google-services Gradle plugin 4.5.0.
 
-The Gradle wrapper is restored. On 2026-10-07 the current Windows host successfully ran `testDebugUnitTest` (no test sources), `assembleDebug`, and `lintDebug`; this verifies compilation, packaging, and static Android checks, not emulator, physical sensor/location, network, or FCM behavior.
+The Gradle wrapper is restored. On 2026-10-08 the current Windows host successfully ran 5 focused `testDebugUnitTest` parser/contract tests plus `assembleDebug` and `lintDebug`; this verifies JVM contract behavior, compilation, packaging, and static Android checks, not emulator, physical sensor/location, network, or FCM behavior.
 
 ## AWS resources
 

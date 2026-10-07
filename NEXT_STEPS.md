@@ -28,7 +28,7 @@ The PowerShell runner now calls the scenario-control API and polls its authorita
 
 1. Run the Android debug APK on an emulator against local FastAPI at `http://10.0.2.2:8000`; verify heartbeat, trigger, physical provenance, alert polling, and idempotent ACK in SQLite/API views.
 2. Repeat sensor/location monitoring on a physical device using a reachable HTTPS endpoint; record permission and lifecycle evidence.
-3. Add focused Android parser/state unit tests and instrumentation/accessibility coverage.
+3. Add Android instrumentation/accessibility coverage; focused V2 envelope/error/alert JVM tests are now present.
 4. Install/configure AWS CLI, verify the intended account/region, and deploy the synthesized session-scoped V2 stack.
 5. Run the AWS heartbeat/trigger smoke script, inspect API Gateway/Lambda/DynamoDB/CloudWatch, then run an IoT distributed scenario and compare correlation behavior with local V2.
 6. Launch the implemented dashboard AWS mode with the deployed session config and verify real device/event/alert/ACK visibility.

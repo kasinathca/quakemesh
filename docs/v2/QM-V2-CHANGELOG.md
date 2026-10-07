@@ -19,6 +19,7 @@
 - Replaced the primitive screen with a professional research-status interface that separates local motion from cloud-corroborated events.
 - Added debug-only emulator loopback networking while keeping release cleartext disabled.
 - Verified debug APK assembly and Android lint; emulator, physical device, and live FCM remain unverified.
+- Added five JVM tests for V2 success envelopes, structured/fallback errors, observation receipts, and authoritative alert/ACK identity.
 
 ## 2026-10-06 — local control-plane completion
 

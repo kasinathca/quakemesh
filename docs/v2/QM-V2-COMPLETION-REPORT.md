@@ -78,7 +78,7 @@ Browser E2E verifies:
 
 ## Android V2 addendum — 2026-10-07
 
-The subsequent Android milestone added typed V2 envelope/error handling, physical observation submission without scenario headers, observable foreground monitoring state, recurring heartbeats, a professional status UI, local-vs-corroborated state separation, local alert polling, `alert_id`-first FCM handling, and idempotent Android acknowledgement calls. The current Windows host completed debug compilation/APK assembly and Android lint. `testDebugUnitTest` ran but reported `NO-SOURCE` because focused Android tests have not yet been added.
+The subsequent Android milestone added typed V2 envelope/error handling, physical observation submission without scenario headers, observable foreground monitoring state, recurring heartbeats, a professional status UI, local-vs-corroborated state separation, local alert polling, `alert_id`-first FCM handling, and idempotent Android acknowledgement calls. The current Windows host completed 5 focused V2 envelope/error/alert JVM tests, debug compilation/APK assembly, and Android lint.
 
 This does not revise or weaken the local control-plane evidence above. Emulator/physical-device execution, real Android-to-FastAPI traffic, and live FCM remain unverified.
 
