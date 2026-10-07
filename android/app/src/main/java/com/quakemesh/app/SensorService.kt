@@ -43,9 +43,31 @@ class SensorService:Service(),SensorEventListener,LocationListener{
             val l=lastLocation?:return;lastTriggerAt=now;ApiClient.trigger(DeviceIdentity.id(this),DeviceIdentity.nextSeq(this),l.latitude,l.longitude,rms,peak)
         }
     }
-    private fun sendHeartbeat(){
-        val l=lastLocation?:return;lastHeartbeatAt=System.currentTimeMillis();FirebaseMessaging.getInstance().token.addOnCompleteListener{task->
-            val token=if(task.isSuccessful)task.result else null;ApiClient.heartbeat(DeviceIdentity.id(this),DeviceIdentity.nextSeq(this),l.latitude,l.longitude,token)
-        }
+    private fun sendHeartbeat() {
+    val location = lastLocation ?: return
+    lastHeartbeatAt = System.currentTimeMillis()
+
+    if (!BuildConfig.QUAKEMESH_FIREBASE_ENABLED) {
+        ApiClient.heartbeat(
+            DeviceIdentity.id(this),
+            DeviceIdentity.nextSeq(this),
+            location.latitude,
+            location.longitude,
+            null
+        )
+        return
     }
+
+    FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
+        val token = if (task.isSuccessful) task.result else null
+
+        ApiClient.heartbeat(
+            DeviceIdentity.id(this),
+            DeviceIdentity.nextSeq(this),
+            location.latitude,
+            location.longitude,
+            token
+        )
+    }
+}
 }

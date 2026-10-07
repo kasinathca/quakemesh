@@ -2,7 +2,12 @@ import java.util.Properties
 
 plugins {
     id("com.android.application")
-    id("com.google.gms.google-services")
+}
+
+val googleServicesFile = file("google-services.json")
+
+if (googleServicesFile.exists()) {
+    pluginManager.apply("com.google.gms.google-services")
 }
 
 val localProps=Properties().apply {
@@ -15,14 +20,30 @@ android {
     namespace="com.quakemesh.app"
     compileSdk=37
     defaultConfig {
-        applicationId="com.quakemesh.app"
-        minSdk=26
-        targetSdk=37
-        versionCode=2
-        versionName="1.0.1"
-        buildConfigField("String","QUAKEMESH_API_BASE_URL",q(localProps.getProperty("QUAKEMESH_API_BASE_URL", "")))
-        buildConfigField("String","QUAKEMESH_API_KEY",q(localProps.getProperty("QUAKEMESH_API_KEY", "")))
-    }
+    applicationId = "com.quakemesh.app"
+    minSdk = 26
+    targetSdk = 37
+    versionCode = 2
+    versionName = "1.0.1"
+
+    buildConfigField(
+        "String",
+        "QUAKEMESH_API_BASE_URL",
+        q(localProps.getProperty("QUAKEMESH_API_BASE_URL", ""))
+    )
+
+    buildConfigField(
+        "String",
+        "QUAKEMESH_API_KEY",
+        q(localProps.getProperty("QUAKEMESH_API_KEY", ""))
+    )
+
+    buildConfigField(
+        "boolean",
+        "QUAKEMESH_FIREBASE_ENABLED",
+        googleServicesFile.exists().toString()
+    )
+}
     buildFeatures { buildConfig=true }
     compileOptions { sourceCompatibility=JavaVersion.VERSION_17; targetCompatibility=JavaVersion.VERSION_17 }
 }
