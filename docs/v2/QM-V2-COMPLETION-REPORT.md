@@ -76,9 +76,15 @@ Browser E2E verifies:
 - Local control is intentionally loopback-only and is not an internet-facing authorization design.
 - Git history is established and synchronized with the GitHub `main` branch. The completed V2 local phase is recorded in commit `575ac25` (`Complete QuakeMesh V2 local phase`).
 
+## Android V2 addendum — 2026-10-07
+
+The subsequent Android milestone added typed V2 envelope/error handling, physical observation submission without scenario headers, observable foreground monitoring state, recurring heartbeats, a professional status UI, local-vs-corroborated state separation, local alert polling, `alert_id`-first FCM handling, and idempotent Android acknowledgement calls. The current Windows host completed debug compilation/APK assembly and Android lint. `testDebugUnitTest` ran but reported `NO-SOURCE` because focused Android tests have not yet been added.
+
+This does not revise or weaken the local control-plane evidence above. Emulator/physical-device execution, real Android-to-FastAPI traffic, and live FCM remain unverified.
+
 ## Explicitly not verified
 
-- Android V2 UI, build, emulator, or physical-device behavior.
+- Android emulator or physical-device UI/sensor/location/network behavior; build and lint are verified separately in the addendum.
 - AWS ephemeral-session ownership, TTL cleanup, strict teardown, synthesis, or live deployment.
 - AWS parity for V2 envelopes, provenance, telemetry, reset, or export.
 - AWS IoT delivery, DynamoDB records, CloudWatch behavior, or costs.

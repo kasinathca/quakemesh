@@ -5,7 +5,7 @@ Academic cloud-computing project · AWS serverless backend · H3 spatial indexin
 
 > **Important scope statement:** QuakeMesh is an experimental software prototype. A “confirmed event” means the configured cloud corroboration rules were satisfied. It is **not** an official earthquake declaration, does not estimate magnitude or epicentre, and is not validated for life-safety use.
 
-> **V2 engineering status:** the local control plane, authoritative scenario engine, provenance isolation, structured telemetry stream, evidence export/reset/ACK contracts, and React operations dashboard are implemented and locally verified. Android V2, strict ephemeral AWS sessions, AWS deployment, and live FCM delivery are not verified. See [`docs/v2/QM-V2-COMPLETION-REPORT.md`](docs/v2/QM-V2-COMPLETION-REPORT.md).
+> **V2 engineering status:** the local control plane, authoritative scenario engine, provenance isolation, structured telemetry stream, evidence export/reset/ACK contracts, and React operations dashboard are implemented and locally verified. The Android V2 networking, monitoring UI, local API configuration, alert identity, and ACK client now build and lint successfully; emulator/physical-device behavior and live FCM remain unverified. Strict ephemeral AWS sessions and AWS V2 deployment are not yet implemented or verified. See [`docs/v2/QM-V2-COMPLETION-REPORT.md`](docs/v2/QM-V2-COMPLETION-REPORT.md).
 
 ## What is implemented
 
@@ -281,6 +281,8 @@ To add Android FCM:
 
 The Android app has no manual “earthquake confirmed” button. It performs a local motion prefilter and sends a trigger; cloud corroboration remains authoritative.
 
+For local emulator development, a debug build defaults to `http://10.0.2.2:8000`. Only the debug manifest permits cleartext traffic, and only for emulator/host loopback aliases. A local FastAPI connection does not require an API key. Release builds have no fallback URL and retain the HTTPS-only main-manifest policy. Override either mode with `QUAKEMESH_API_BASE_URL` in ignored `android/local.properties`.
+
 ## Android build baseline
 
 The Android project is intentionally modern rather than based on stale templates:
@@ -293,7 +295,7 @@ The Android project is intentionally modern rather than based on stale templates
 - Firebase BoM 34.18.0;
 - google-services Gradle plugin 4.5.0.
 
-The packaging environment used to create this repository could not fetch the Gradle wrapper JAR/scripts, so the source contains `gradle-wrapper.properties` but may require Android Studio or one local `gradle wrapper --gradle-version 9.6.0` invocation before command-line wrapper use. Do **not** interpret the presence of Android source as a claim that an APK was built in the packaging environment.
+The Gradle wrapper is restored. On 2026-10-07 the current Windows host successfully ran `testDebugUnitTest` (no test sources), `assembleDebug`, and `lintDebug`; this verifies compilation, packaging, and static Android checks, not emulator, physical sensor/location, network, or FCM behavior.
 
 ## AWS resources
 

@@ -13,7 +13,7 @@ Status reflects evidence generated on 2026-10-06. “Verified locally” never i
 | V2-FR-007 local control API | FastAPI V2 envelope/endpoints | API integration and browser tests | VERIFIED locally |
 | V2-FR-008 local parity reads | typed local endpoints | API surface integration test | VERIFIED locally |
 | V2-FR-009 dashboard | React/TypeScript/Vite feature modules | unit, build, E2E, responsive screenshots | VERIFIED locally |
-| V2-FR-010 Android V2 | existing Android baseline only | none in this phase | NOT VERIFIED |
+| V2-FR-010 Android V2 | typed V2 client, observable monitoring state, professional status UI, local alert polling, alert-ID FCM parsing, Android ACK | Gradle debug compile/APK assembly/lint | PARTIALLY VERIFIED; emulator, physical device, traffic, and FCM not run |
 | V2-FR-011 AWS session ownership | design only | none in this phase | NOT IMPLEMENTED |
 | V2-FR-012 AWS teardown/verifier | legacy V1 tooling only | none in this phase | NOT VERIFIED |
 | V2-FR-013 local evidence export | ScenarioControlService export | privacy/export test + browser E2E | VERIFIED locally |
