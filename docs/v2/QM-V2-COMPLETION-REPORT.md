@@ -85,8 +85,8 @@ This does not revise or weaken the local control-plane evidence above. Emulator/
 ## Explicitly not verified
 
 - Android emulator or physical-device UI/sensor/location/network behavior; build and lint are verified separately in the addendum.
-- AWS ephemeral-session ownership, TTL cleanup, strict teardown, synthesis, or live deployment.
-- AWS parity for V2 envelopes, provenance, telemetry, reset, or export.
+- AWS live deployment, endpoint behavior, account ownership, automatic expiry cleanup, or live teardown. Session ownership, strict teardown source, V2 envelopes/provenance/telemetry, and CDK synthesis are verified separately as of 2026-10-08.
+- AWS reset/export controls; they are not part of the current cloud slice.
 - AWS IoT delivery, DynamoDB records, CloudWatch behavior, or costs.
 - Live FCM delivery or physical phone receipt.
 

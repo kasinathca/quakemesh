@@ -29,9 +29,10 @@ The PowerShell runner now calls the scenario-control API and polls its authorita
 1. Run the Android debug APK on an emulator against local FastAPI at `http://10.0.2.2:8000`; verify heartbeat, trigger, physical provenance, alert polling, and idempotent ACK in SQLite/API views.
 2. Repeat sensor/location monitoring on a physical device using a reachable HTTPS endpoint; record permission and lifecycle evidence.
 3. Add focused Android parser/state unit tests and instrumentation/accessibility coverage.
-4. Replace the legacy AWS layout with session-scoped ownership, TTL cleanup, strict teardown, and zero-resource verification.
-5. Implement AWS API/telemetry adapters that match the V2 envelopes and provenance rules.
-6. Deploy only after explicit authorization and credential/account verification.
-7. Validate live IoT, DynamoDB, event/alert parity, then opt-in FCM delivery.
+4. Install/configure AWS CLI, verify the intended account/region, and deploy the synthesized session-scoped V2 stack.
+5. Run the AWS heartbeat/trigger smoke script, inspect API Gateway/Lambda/DynamoDB/CloudWatch, then run an IoT distributed scenario and compare correlation behavior with local V2.
+6. Add dashboard AWS V2 mode using the real deployed endpoint and honest capability states.
+7. Validate exact-session teardown and zero-owned-resource reporting, then add automatic expiry cleanup as a backstop.
+8. Configure and validate opt-in FCM delivery only after core cloud traffic is proven.
 
 Keep the following explicitly separate in reports: local verification, Android build/device verification, AWS synthesis, AWS live deployment, and FCM delivery. None implies another.

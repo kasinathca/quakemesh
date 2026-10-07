@@ -112,8 +112,9 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Provision independent QuakeMesh AWS IoT simulator Things")
     parser.add_argument("--count", type=int, required=True)
     parser.add_argument("--region", default=os.getenv("AWS_REGION", "ap-south-1"))
+    parser.add_argument("--session-id", required=True)
     parser.add_argument("--out", default="artifacts/iot-devices")
-    parser.add_argument("--prefix", default="QM-SIM-")
+    parser.add_argument("--prefix", required=True)
     args = parser.parse_args()
     if not 1 <= args.count <= 500:
         parser.error("--count must be 1..500")
@@ -126,7 +127,8 @@ def main() -> None:
     iot = boto3.client("iot", region_name=args.region)
 
     # Fail before creating anything if the CDK-managed policy is absent.
-    iot.get_policy(policyName="QuakeMeshDevicePolicy")
+    policy_name = f"QuakeMeshV2-{args.session_id}-DevicePolicy"
+    iot.get_policy(policyName=policy_name)
     endpoint = iot.describe_endpoint(endpointType="iot:Data-ATS")["endpointAddress"]
 
     for index in range(1, args.count + 1):
@@ -134,7 +136,12 @@ def main() -> None:
         directory = out / thing
         directory.mkdir(parents=True, exist_ok=True)
         try:
-            iot.create_thing(thingName=thing)
+            created = iot.create_thing(
+                thingName=thing,
+                attributePayload={"attributes": {"Project": "QuakeMesh", "SessionId": args.session_id}},
+            )
+            if created.get("thingArn"):
+                iot.tag_resource(resourceArn=created["thingArn"], tags=[{"Key":"Project","Value":"QuakeMesh"},{"Key":"SessionId","Value":args.session_id}])
         except ClientError as exc:
             if _error_code(exc) != "ResourceAlreadyExistsException":
                 raise
@@ -143,7 +150,7 @@ def main() -> None:
         if arn:
             _prune_stale_principals(iot, thing, keep_arn=arn)
             iot.attach_thing_principal(thingName=thing, principal=arn)
-            iot.attach_policy(policyName="QuakeMeshDevicePolicy", target=arn)
+            iot.attach_policy(policyName=policy_name, target=arn)
             print("reused", thing)
             continue
 
@@ -159,7 +166,7 @@ def main() -> None:
             _write_secret(directory / "private.pem.key", str(cert["keyPair"]["PrivateKey"]))
             (directory / "certificate-arn.txt").write_text(cert_arn, encoding="utf-8")
             iot.attach_thing_principal(thingName=thing, principal=cert_arn)
-            iot.attach_policy(policyName="QuakeMeshDevicePolicy", target=cert_arn)
+            iot.attach_policy(policyName=policy_name, target=cert_arn)
         except Exception:
             # Avoid leaving a newly issued but unusable credential in the account.
             try:

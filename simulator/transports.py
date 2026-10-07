@@ -57,7 +57,7 @@ class AwsIotTransport:
     delivery without a separate MQTT test client.
     """
 
-    def __init__(self, endpoint: str, cert_dir: str | Path, root_ca: str | Path):
+    def __init__(self, endpoint: str, cert_dir: str | Path, root_ca: str | Path, session_id: str):
         try:
             from awscrt import mqtt
             from awsiot import mqtt_connection_builder
@@ -68,6 +68,7 @@ class AwsIotTransport:
         self.endpoint = endpoint
         self.cert_dir = Path(cert_dir)
         self.root_ca = str(root_ca)
+        self.session_id = session_id
         self.connections: dict[str, object] = {}
         self._alerts: list[dict] = []
         self._seen_alerts: set[tuple[str, str]] = set()
@@ -80,11 +81,12 @@ class AwsIotTransport:
             except Exception:
                 decoded = {"raw": bytes(payload).decode("utf-8", errors="replace")}
             event_id = str(decoded.get("event_id", ""))
-            key = (device_id, event_id)
+            alert_id = str(decoded.get("alert_id", ""))
+            key = (device_id, alert_id or event_id)
             with self._lock:
-                if event_id and key in self._seen_alerts:
+                if key[1] and key in self._seen_alerts:
                     return
-                if event_id:
+                if key[1]:
                     self._seen_alerts.add(key)
                 self._alerts.append(
                     {
@@ -115,7 +117,7 @@ class AwsIotTransport:
         )
         connection.connect().result(timeout=15)
         connection.subscribe(
-            topic=f"quakemesh/v1/devices/{device_id}/alerts",
+            topic=f"quakemesh/v1/{self.session_id}/devices/{device_id}/alerts",
             qos=self.mqtt.QoS.AT_LEAST_ONCE,
             callback=self._on_alert(device_id),
         ).result(timeout=10)
@@ -123,7 +125,7 @@ class AwsIotTransport:
         return connection
 
     def _publish(self, device_id: str, kind: str, payload: dict) -> dict:
-        topic = f"quakemesh/v1/devices/{device_id}/{kind}"
+        topic = f"quakemesh/v1/{self.session_id}/devices/{device_id}/{kind}"
         self._conn(device_id).publish(
             topic=topic,
             payload=json.dumps(payload),

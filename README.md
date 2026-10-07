@@ -5,11 +5,11 @@ Academic cloud-computing project · AWS serverless backend · H3 spatial indexin
 
 > **Important scope statement:** QuakeMesh is an experimental software prototype. A “confirmed event” means the configured cloud corroboration rules were satisfied. It is **not** an official earthquake declaration, does not estimate magnitude or epicentre, and is not validated for life-safety use.
 
-> **V2 engineering status:** the local control plane, authoritative scenario engine, provenance isolation, structured telemetry stream, evidence export/reset/ACK contracts, and React operations dashboard are implemented and locally verified. The Android V2 networking, monitoring UI, local API configuration, alert identity, and ACK client now build and lint successfully; emulator/physical-device behavior and live FCM remain unverified. Strict ephemeral AWS sessions and AWS V2 deployment are not yet implemented or verified. See [`docs/v2/QM-V2-COMPLETION-REPORT.md`](docs/v2/QM-V2-COMPLETION-REPORT.md).
+> **V2 engineering status:** the local control plane and React dashboard are locally verified. Android V2 networking/UI/ACK builds and lints, but emulator/device/FCM behavior is unverified. The session-scoped AWS V2 API/Lambda/DynamoDB/IoT/CloudWatch foundation is implemented, tested, and locally synthesized, but is not live-deployed because this host has no configured AWS CLI/account evidence. See [`docs/v2/QM-V2-COMPLETION-REPORT.md`](docs/v2/QM-V2-COMPLETION-REPORT.md) and [`docs/v2/QM-V2-AWS-IMPLEMENTATION.md`](docs/v2/QM-V2-AWS-IMPLEMENTATION.md).
 
 ## What is implemented
 
-This repository contains a complete V1 engineering baseline that can be demonstrated locally on one Windows PC and then deployed to AWS:
+This repository contains the verified local V2 system, the Android V2 client foundation, and a session-scoped AWS V2 serverless implementation. Historical V1 evidence remains in the validation archive:
 
 - shared Python domain engine for schema validation, H3 canonicalization, spatial/temporal correlation and event lifecycle;
 - local FastAPI + SQLite V2 control plane with versioned envelopes, stable errors, request IDs, REST snapshots, and SSE stage telemetry;
@@ -214,9 +214,9 @@ Expected high-level behavior:
 
 Simulator truth remains only in simulator trace metadata and is never sent to the detector. Controlled evidence carries its authoritative run ID. Physical propagation changes `observed_at_ms`; simulated network jitter delays delivery instead of falsifying observation time.
 
-## AWS deployment
+## AWS V2 deployment
 
-> **V2 status warning:** The AWS implementation and deployment commands in this section belong to the retained V1 cloud baseline. They are preserved as implementation reference and must not be treated as the V2 cloud architecture. Do not deploy this stack as V2 until session-scoped ownership, expiry/cleanup, zero-resource verification, and V2 API/provenance/telemetry parity have been implemented and verified.
+The source and CDK template are implemented and locally synthesized, but a live deployment has not been performed on this host. Review `docs/v2/QM-V2-AWS-IMPLEMENTATION.md`, then verify the intended AWS account before creating billable resources.
 
 First complete local setup and validation, then verify AWS credentials:
 
@@ -224,10 +224,10 @@ First complete local setup and validation, then verify AWS credentials:
 aws sts get-caller-identity
 ```
 
-Deploy into Mumbai by default:
+Deploy an isolated, expiring session into Mumbai by default:
 
 ```powershell
-.\aws\scripts\deploy.ps1 -Region ap-south-1
+.\aws\scripts\deploy.ps1 -Region ap-south-1 -DurationMinutes 120
 ```
 
 The deploy script performs the important platform-sensitive work automatically:
@@ -236,35 +236,24 @@ The deploy script performs the important platform-sensitive work automatically:
 - creates an isolated CDK Python environment;
 - forces the CDK CLI to execute `app.py` using that exact environment’s Python path;
 - runs CDK synth/bootstrap/deploy with pinned Toolkit CLI 2.1140.0;
-- exports the account-specific API key/endpoint configuration into `artifacts/runtime-config.json`.
+- exports account/session ownership, API key, endpoints, and table names into `artifacts/aws-v2/<session-id>/runtime-config.json`.
 
 The exported runtime file is gitignored because it contains the controlled-demo API key.
 
-Provision 25 simulator Things/certificates:
+Use the session ID printed by deploy to run the real API smoke path:
 
 ```powershell
-.\aws\scripts\provision_simulators.ps1 -Count 25
+.\.venv\Scripts\python.exe aws\scripts\smoke_test.py --config artifacts\aws-v2\<session-id>\runtime-config.json
 ```
 
-Run a real AWS IoT scenario:
+Provision 25 exact-session simulator Things/certificates and run a real IoT scenario:
 
 ```powershell
-.\aws\scripts\run_aws_scenario.ps1 -Transport mqtt -Scenario distributed -Devices 25
+.\aws\scripts\provision_simulators.ps1 -SessionId <session-id> -Count 25
+.\aws\scripts\run_aws_scenario.ps1 -SessionId <session-id> -Scenario distributed -Devices 25
 ```
 
-You can also exercise the gated HTTPS fallback:
-
-```powershell
-.\aws\scripts\run_aws_scenario.ps1 -Transport http -Scenario distributed -Devices 25
-```
-
-Upload an important simulator trace to the retained S3 experiment archive:
-
-```powershell
-.\aws\scripts\upload_trace.ps1 -Trace artifacts\traces\YOUR_TRACE.json -Region ap-south-1
-```
-
-The uploader validates QuakeMesh trace schema `1.0`, computes SHA-256, stores it as S3 object metadata, and never uploads IoT private-key directories.
+The AWS scenario path is MQTT-only so simulator traffic is stored as scenario provenance. HTTPS ingress is reserved for physical Android observations and refuses a scenario run header. Traces remain local under the ignored session artifact directory; the V2 stack intentionally creates no retained archive bucket.
 
 ## Firebase / Android
 
@@ -299,7 +288,7 @@ The Gradle wrapper is restored. On 2026-10-07 the current Windows host successfu
 
 ## AWS resources
 
-> The resources below describe the retained V1 AWS baseline, not the final V2 session-scoped cloud architecture.
+The active AWS source now defines the session-scoped V2 stack. Live deployment remains separately unverified; the older V1 behavior is retained only in Git history and historical validation text.
 
 The CDK stack creates only managed/serverless services:
 
@@ -309,10 +298,9 @@ The CDK stack creates only managed/serverless services:
 - API Gateway;
 - EventBridge;
 - SNS integration hooks;
-- S3 experiment archive;
 - CloudWatch alarms/X-Ray.
 
-It deliberately creates **no VPC, NAT Gateway, EC2, ECS, EKS or RDS**.
+It deliberately creates **no VPC, NAT Gateway, EC2, ECS, EKS, RDS, or retained S3 bucket**. See the AWS V2 implementation document for deploy, smoke, observability, ownership, and teardown boundaries.
 
 ## Privacy design
 
@@ -393,10 +381,10 @@ It includes clean Git initialization, the pre-push secret scan, both GitHub web 
 After AWS experiments:
 
 ```powershell
-.\aws\scripts\destroy.ps1 -Region ap-south-1
+.\aws\scripts\destroy.ps1 -SessionId <session-id> -Region ap-south-1
 ```
 
-Simulator certificates/Things are removed before the stack. The S3 experiment archive uses `RETAIN` deliberately; delete the retained bucket manually only after you no longer need the evidence.
+The command refuses mismatched ownership metadata, removes only exact-prefix simulator Things/certificates, destroys only the exact session stack, and writes a `CLEAN` or `INCOMPLETE` verification report. There is no retained V2 S3 bucket.
 
 ## License
 

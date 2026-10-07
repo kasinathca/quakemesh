@@ -12,12 +12,30 @@ def test_json_contracts_parse_and_use_explicit_versions():
 def test_iot_policy_is_thing_scoped():
     s=(ROOT/"aws/infrastructure/stack.py").read_text()
     assert '${iot:Connection.Thing.ThingName}' in s
-    assert 'quakemesh/v1/devices/{thing_var}/trigger' in s
-    assert 'quakemesh/v1/devices/{thing_var}/alerts' in s
+    assert 'topic_root = f"quakemesh/v1/{session_id}/devices"' in s
+    assert 'resource_name=f"{topic_root}/{thing_var}/trigger"' in s
+    assert 'resource_name=f"{topic_root}/{thing_var}/alerts"' in s
 
 def test_https_writes_require_api_key():
     s=(ROOT/"aws/infrastructure/stack.py").read_text()
-    assert s.count('add_method("POST",integration,api_key_required=True)')==2
+    assert s.count('api_key_required=True')==3
+
+def test_aws_v2_stack_is_session_owned_and_destroyable():
+    s=(ROOT/"aws/infrastructure/stack.py").read_text()
+    for value in ['"SessionId": session_id', '"ExpiresAt": expires_at', '"Ephemeral": "true"']:
+        assert value in s
+    assert "RemovalPolicy.RETAIN" not in s
+    assert s.count("removal_policy=RemovalPolicy.DESTROY") >= 6
+
+def test_aws_v2_api_and_provenance_contracts_are_present():
+    api=(ROOT/"aws/lambdas/api.py").read_text()
+    ingress=(ROOT/"aws/lambdas/ingress.py").read_text()
+    for endpoint in ["/health", "/v1/devices", "/v1/events", "/v1/alerts"]:
+        assert endpoint in api
+    assert "ALERT_DEVICE_MISMATCH" in api
+    assert "X-QuakeMesh-Run-Id" in api
+    assert 'provenance_type="scenario"' in ingress
+    assert 'provenance_type:str="physical"' in ingress
 
 def test_no_v1_vpc_compute_database_constructs():
     s=(ROOT/"aws/infrastructure/stack.py").read_text().lower()
