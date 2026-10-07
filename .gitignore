@@ -40,3 +40,7 @@ Thumbs.db
 # Release bundles
 *.zip
 *.sha256
+android/.gradle/
+android/.kotlin/
+android/build/
+android/app/build/
