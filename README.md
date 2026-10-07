@@ -216,6 +216,8 @@ Simulator truth remains only in simulator trace metadata and is never sent to th
 
 ## AWS deployment
 
+> **V2 status warning:** The AWS implementation and deployment commands in this section belong to the retained V1 cloud baseline. They are preserved as implementation reference and must not be treated as the V2 cloud architecture. Do not deploy this stack as V2 until session-scoped ownership, expiry/cleanup, zero-resource verification, and V2 API/provenance/telemetry parity have been implemented and verified.
+
 First complete local setup and validation, then verify AWS credentials:
 
 ```powershell
@@ -294,6 +296,8 @@ The Android project is intentionally modern rather than based on stale templates
 The packaging environment used to create this repository could not fetch the Gradle wrapper JAR/scripts, so the source contains `gradle-wrapper.properties` but may require Android Studio or one local `gradle wrapper --gradle-version 9.6.0` invocation before command-line wrapper use. Do **not** interpret the presence of Android source as a claim that an APK was built in the packaging environment.
 
 ## AWS resources
+
+> The resources below describe the retained V1 AWS baseline, not the final V2 session-scoped cloud architecture.
 
 The CDK stack creates only managed/serverless services:
 

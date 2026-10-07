@@ -74,7 +74,7 @@ Browser E2E verifies:
 - Performance and load limits were not measured.
 - SSE is an in-process local stream over SQLite; AWS must implement contract parity rather than reuse this transport directly.
 - Local control is intentionally loopback-only and is not an internet-facing authorization design.
-- This checkout has no `.git` metadata, so commit history/hygiene could not be verified.
+- Git history is established and synchronized with the GitHub `main` branch. The completed V2 local phase is recorded in commit `575ac25` (`Complete QuakeMesh V2 local phase`).
 
 ## Explicitly not verified
 
