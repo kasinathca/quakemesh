@@ -43,10 +43,12 @@ interface LayoutProps {
   connection: ConnectionState;
   lastUpdated: number | null;
   error: string | null;
+  environmentLabel: string;
+  region?: string;
   children: ReactNode;
 }
 
-export function Layout({ active, onNavigate, connection, lastUpdated, error, children }: LayoutProps) {
+export function Layout({ active, onNavigate, connection, lastUpdated, error, environmentLabel, region, children }: LayoutProps) {
   return (
     <div className="shell">
       <aside className="sidebar">
@@ -77,7 +79,7 @@ export function Layout({ active, onNavigate, connection, lastUpdated, error, chi
           </div>
           <div className="connection-block" title={error ?? undefined}>
             <StatusBadge value={connection} />
-            <span>LOCAL</span>
+            <span>{environmentLabel}{region ? ` · ${region}` : ""}</span>
           </div>
         </header>
         {connection === "disconnected" ? (

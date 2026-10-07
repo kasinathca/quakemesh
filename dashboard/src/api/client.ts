@@ -13,7 +13,14 @@ import type {
 
 declare global {
   interface Window {
-    QUAKEMESH_CONFIG?: { apiBaseUrl?: string };
+    QUAKEMESH_CONFIG?: {
+      apiBaseUrl?: string;
+      apiKey?: string;
+      environmentLabel?: string;
+      region?: string;
+      sessionId?: string;
+      expiresAt?: string;
+    };
   }
 }
 
@@ -39,6 +46,13 @@ export const API_BASE = (
   "http://127.0.0.1:8000"
 ).replace(/\/$/, "");
 
+export const dashboardEnvironment = {
+  label: window.QUAKEMESH_CONFIG?.environmentLabel,
+  region: window.QUAKEMESH_CONFIG?.region,
+  sessionId: window.QUAKEMESH_CONFIG?.sessionId,
+  expiresAt: window.QUAKEMESH_CONFIG?.expiresAt,
+};
+
 export class ApiProblem extends Error {
   constructor(
     message: string,
@@ -50,10 +64,14 @@ export class ApiProblem extends Error {
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const apiKey = window.QUAKEMESH_CONFIG?.apiKey;
+  const headers = new Headers(init?.headers);
+  headers.set("Content-Type", "application/json");
+  if (apiKey && init?.method && init.method !== "GET") headers.set("x-api-key", apiKey);
   const response = await fetch(`${API_BASE}${path}`, {
     cache: "no-store",
     ...init,
-    headers: { "Content-Type": "application/json", ...init?.headers },
+    headers,
   });
   const raw: unknown = await response.json();
   if (!response.ok) {

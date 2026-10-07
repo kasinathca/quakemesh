@@ -42,7 +42,7 @@ def targets(cells: list[str], seen_after: int, provenance_type: str, scenario_ru
     return list(found.values())
 
 
-def claim_delivery(event: dict, device_id: str) -> bool:
+def claim_delivery(event: dict, device: dict) -> bool:
     """Return True when this invocation should attempt delivery.
 
     SENT is terminal for an event/device pair. DISPATCHING and FAILED are retryable
@@ -51,6 +51,7 @@ def claim_delivery(event: dict, device_id: str) -> bool:
     therefore deduplicate by alert_id.
     """
     table = ddb.Table(env("QM_ALERT_TABLE"))
+    device_id = str(device["device_id"])
     event_id = str(event["event_id"])
     event_version = int(event["version"])
     alert_id = f"{event_id}:{device_id}"
@@ -64,7 +65,7 @@ def claim_delivery(event: dict, device_id: str) -> bool:
             "SET event_id=:event_id,event_version=:event_version,device_id=:device_id,"
             "created_at_ms=if_not_exists(created_at_ms,:now),updated_at_ms=:now,#s=:dispatching,"
             "attempts=if_not_exists(attempts,:zero)+:one,provenance_type=:provenance,"
-            "session_id=:session"
+            "session_id=:session,transport=:transport"
         ),
         ExpressionAttributeNames={"#s": "status"},
         ExpressionAttributeValues={
@@ -77,6 +78,7 @@ def claim_delivery(event: dict, device_id: str) -> bool:
             ":one": 1,
             ":provenance": str(event.get("provenance_type", "physical")),
             ":session": env("QM_SESSION_ID"),
+            ":transport": str(device.get("transport", "unknown")),
         },
     )
     if event.get("scenario_run_id"):
@@ -93,8 +95,10 @@ def mark(alert_id: str, status: str, detail: str | None = None) -> None:
     values = {":s": status, ":now": int(time.time() * 1000)}
     names = {"#s": "status"}
     if detail:
-        expression += ",detail=:d"
+        expression += ",failure_detail=:d"
         values[":d"] = detail[:1000]
+    if status == "SENT":
+        expression += ",sent_at_ms=:now"
     ddb.Table(env("QM_ALERT_TABLE")).update_item(
         Key={"alert_id": alert_id},
         UpdateExpression=expression,
@@ -150,7 +154,7 @@ def handler(event, context):
             version = int(event_item["version"])
             event_id = str(event_item["event_id"])
             alert_id = f"{event_id}:{device_id}"
-            if not claim_delivery(event_item, device_id):
+            if not claim_delivery(event_item, device):
                 continue
             payload = {
                 "schema_version": "1.0",

@@ -11,10 +11,10 @@ export function Overview({ control }: { control: ControlPlane }) {
     ["Mode", snapshot.health?.mode],
     ["API health", snapshot.health?.status],
     ["Active run", active?.run_id],
-    ["Devices", snapshot.health?.stats.devices],
-    ["Evidence", snapshot.health?.stats.evidence],
-    ["Events", snapshot.health?.stats.events],
-    ["Alerts", snapshot.health?.stats.alerts],
+    ["Devices", snapshot.health?.stats?.devices ?? snapshot.devices?.length],
+    ["Evidence", snapshot.health?.stats?.evidence],
+    ["Events", snapshot.health?.stats?.events ?? snapshot.events?.length],
+    ["Alerts", snapshot.health?.stats?.alerts ?? snapshot.alerts?.length],
     ["Confirmation", snapshot.events?.[0]?.status],
   ];
   return (
@@ -28,7 +28,7 @@ export function Overview({ control }: { control: ControlPlane }) {
         ))}
       </div>
       <div className="two-column">
-        <Panel title="Current experiment" description="Authoritative local scenario state">
+        <Panel title="Current experiment" description={control.capabilities.scenarioControl ? "Authoritative local scenario state" : "Scenario control is not exposed by the current AWS V2 API slice"}>
           {snapshot.activeRun ? (
             <dl className="detail-list">
               <div><dt>Run</dt><dd className="mono">{snapshot.activeRun.run_id}</dd></div>
@@ -36,7 +36,7 @@ export function Overview({ control }: { control: ControlPlane }) {
               <div><dt>Status</dt><dd><StatusBadge value={snapshot.activeRun.status} /></dd></div>
               <div><dt>Expected / observed</dt><dd>{snapshot.activeRun.expected_result} / {snapshot.activeRun.observed_result ?? "Waiting for data"}</dd></div>
             </dl>
-          ) : <DataState>No scenario run selected</DataState>}
+          ) : <DataState>{control.capabilities.scenarioControl ? "No scenario run selected" : "Unavailable in AWS V2 mode"}</DataState>}
         </Panel>
         <Panel title="Latest event" description="Most recently updated authoritative event">
           {snapshot.events?.[0] ? (

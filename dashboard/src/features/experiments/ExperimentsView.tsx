@@ -5,6 +5,7 @@ import { StatusBadge } from "../../components/StatusBadge";
 import { formatTime } from "../../theme/format";
 
 export function ExperimentsView({ control }: { control: ControlPlane }) {
+  if (!control.capabilities.scenarioTelemetry) return <Panel title="Experiment history" description="Unavailable in the current AWS V2 API slice."><DataState>Cloud run-history parity is pending. Device, event, and alert views remain backed by the real AWS API.</DataState></Panel>;
   const runs = control.snapshot.runs;
   return <Panel title="Experiment history" description="Every controlled local execution has one authoritative run record.">
     {runs?.length ? <div className="table-wrap"><table>

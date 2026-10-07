@@ -104,8 +104,9 @@ def _acknowledge(event: dict, request: str) -> dict:
     if not alert_id:
         return failure(request, 404, "ALERT_NOT_FOUND", "The requested alert was not found.")
     payload = json.loads(event.get("body") or "{}")
-    if payload.get("acknowledgement_source") != "android":
-        raise ValidationError("acknowledgement_source must be android")
+    source = payload.get("acknowledgement_source")
+    if source not in {"android", "dashboard"}:
+        raise ValidationError("acknowledgement_source must be android or dashboard")
     device_id = payload.get("device_id")
     if not isinstance(device_id, str) or not device_id:
         raise ValidationError("device_id is required")
@@ -135,7 +136,7 @@ def _acknowledge(event: dict, request: str) -> dict:
                 ExpressionAttributeValues={
                     ":ack": "ACKNOWLEDGED",
                     ":now": timestamp,
-                    ":source": "android",
+                    ":source": source,
                 },
             )
         except ClientError as error:

@@ -55,6 +55,8 @@ export function App() {
       connection={control.connection}
       lastUpdated={control.snapshot.lastUpdated}
       error={control.error}
+      environmentLabel={control.environment.label}
+      region={control.environment.region}
     >
       {content}
     </Layout>

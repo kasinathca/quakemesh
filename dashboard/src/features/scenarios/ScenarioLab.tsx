@@ -77,6 +77,8 @@ export function ScenarioLab({ control }: { control: ControlPlane }) {
     }
   }, [autoscroll, logs]);
 
+  if (!control.capabilities.scenarioControl) return <Panel title="Scenario Lab" description="Unavailable in the current AWS V2 API slice."><DataState>Run cloud scenarios through the session-scoped AWS IoT simulator command. This dashboard does not fabricate cloud controls or telemetry.</DataState></Panel>;
+
   async function perform(action: () => Promise<unknown>): Promise<void> {
     setActionError(null);
     try {

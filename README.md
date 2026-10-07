@@ -255,6 +255,14 @@ Provision 25 exact-session simulator Things/certificates and run a real IoT scen
 
 The AWS scenario path is MQTT-only so simulator traffic is stored as scenario provenance. HTTPS ingress is reserved for physical Android observations and refuses a scenario run header. Traces remain local under the ignored session artifact directory; the V2 stack intentionally creates no retained archive bucket.
 
+Serve the same dashboard in honest cloud mode:
+
+```powershell
+.\scripts\run_dashboard.ps1 -Port 8080 -ConfigPath artifacts\aws-v2\<session-id>\runtime-config.json
+```
+
+The header shows `AWS V2 Demo`, region, connection, and session state. Device/event/alert/ACK views use the real cloud API; unsupported cloud scenario/history/config controls show unavailable states.
+
 ## Firebase / Android
 
 AWS deployment works without Firebase. MQTT simulator alerts remain available.

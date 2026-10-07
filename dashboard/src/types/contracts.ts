@@ -11,9 +11,12 @@ export interface Stats {
 
 export interface Health {
   status: string;
-  mode: "LOCAL";
+  mode: "LOCAL" | "AWS";
   application_version: string;
-  stats: Stats;
+  stats?: Stats;
+  session_id?: string;
+  region?: string;
+  expires_at?: string;
 }
 
 export interface DetectorConfig {
@@ -123,21 +126,23 @@ export interface AlertRecord {
   event_version: number;
   device_id: string;
   created_at_ms: number;
-  sent_at_ms: number | null;
+  sent_at_ms?: number | null;
   acknowledged_at_ms: number | null;
   acknowledgement_source: string | null;
-  transport: string;
+  transport?: string;
   status: string;
-  failure_detail: string | null;
+  failure_detail?: string | null;
   provenance_type: string;
   scenario_run_id: string | null;
 }
 
 export interface SessionInfo {
-  mode: "LOCAL";
+  mode: "LOCAL" | "AWS";
   active_run: ScenarioRun | null;
-  started_at_ms: null;
-  expires_at_ms: null;
+  started_at_ms: number | null;
+  expires_at_ms: number | null;
+  session_id?: string;
+  region?: string;
 }
 
 export interface Snapshot {

@@ -24,7 +24,7 @@ Implemented routes:
 | GET | `/v1/devices` | safe device state without FCM endpoint ARNs |
 | GET | `/v1/events` | authoritative events with footprint/frontier polygons |
 | GET | `/v1/alerts` | target/delivery/ACK records |
-| POST | `/v1/alerts/{alert_id}/ack` | idempotent Android ACK; API key required |
+| POST | `/v1/alerts/{alert_id}/ack` | idempotent Android/dashboard ACK; API key required |
 
 Success and error bodies match the local V2 envelope and carry `X-Request-ID`. The first AWS slice intentionally rejects an HTTPS `X-QuakeMesh-Run-Id`; controlled simulation uses the isolated IoT topic path instead of falsely storing simulator traffic as physical evidence.
 
@@ -70,8 +70,19 @@ Teardown refuses to act without matching local account/region/session/stack meta
 
 CDK bootstrap resources are shared account prerequisites and are not claimed as session-owned or removed. Automatic expiry deletion is not yet implemented; `ExpiresAt` is ownership metadata and an operator-visible deadline, not a claim that cleanup will happen without the teardown command.
 
+## Dashboard cloud mode
+
+After deployment, serve the same dashboard against the real session endpoint:
+
+```powershell
+.\scripts\run_dashboard.ps1 -Port 8080 `
+  -ConfigPath artifacts\aws-v2\<session-id>\runtime-config.json
+```
+
+The ignored production `config.js` receives the demo API URL/key, region, session, and expiry. The UI labels the environment `AWS V2 Demo`, reads real device/event/alert data, supports the real ACK route, and shows API connection/session state. Local-only Scenario Lab, experiment history, detector configuration, reset, export, and SSE telemetry are explicitly unavailable in AWS mode rather than fabricated. Starting without `-ConfigPath` resets the dashboard to Local V2 configuration.
+
 ## Cost and current limitations
 
 All application resources are on-demand/serverless. Normal demo traffic should remain low-cost, but deployment creates billable AWS resources and must be torn down. The exact account and price are not inferred locally.
 
-Locally verified: Python compilation, Ruff, focused AWS contract tests, and direct CDK synthesis. Not verified: AWS authentication, deployment, API endpoint, IoT certificates/traffic, Lambda invocation, DynamoDB writes, CloudWatch logs, alarms, FCM, automatic expiry cleanup, or zero-resource teardown against a real account.
+Locally verified: Python compilation, Ruff, focused AWS contract tests, direct CDK synthesis, and dashboard type/lint/unit/build checks for cloud mode. Not verified: AWS authentication, deployment, API endpoint, IoT certificates/traffic, Lambda invocation, DynamoDB writes, CloudWatch logs, alarms, FCM, automatic expiry cleanup, or zero-resource teardown against a real account.

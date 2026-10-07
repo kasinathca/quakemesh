@@ -3,15 +3,17 @@ import { useEffect, useRef } from "react";
 import { API_BASE } from "../api/client";
 
 interface TelemetryOptions {
+  enabled: boolean;
   onUpdate: () => void;
   onConnected: () => void;
   onDisconnected: () => void;
 }
 
-export function useTelemetry({ onUpdate, onConnected, onDisconnected }: TelemetryOptions): void {
+export function useTelemetry({ enabled, onUpdate, onConnected, onDisconnected }: TelemetryOptions): void {
   const lastSequence = useRef(0);
 
   useEffect(() => {
+    if (!enabled) return undefined;
     const source = new EventSource(`${API_BASE}/v1/telemetry/stream?after=${lastSequence.current}`);
     source.onopen = onConnected;
     source.addEventListener("scenario.stage", (event) => {
@@ -23,5 +25,5 @@ export function useTelemetry({ onUpdate, onConnected, onDisconnected }: Telemetr
     });
     source.onerror = onDisconnected;
     return () => source.close();
-  }, [onConnected, onDisconnected, onUpdate]);
+  }, [enabled, onConnected, onDisconnected, onUpdate]);
 }
