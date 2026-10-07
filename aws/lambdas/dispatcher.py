@@ -111,11 +111,8 @@ def send_fcm(endpoint_arn: str, event: dict, alert_id: str, device_id: str, crea
     inner = {
         "fcmV1Message": {
             "message": {
-                "notification": {
-                    "title": "QuakeMesh alert",
-                    "body": "Corroborated ground-motion evidence detected in your warning region.",
-                },
                 "data": {
+                    "type": "QUAKEMESH_WARNING",
                     "alert_id": alert_id,
                     "event_id": str(event["event_id"]),
                     "event_version": str(event["version"]),

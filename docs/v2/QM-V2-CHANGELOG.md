@@ -8,6 +8,7 @@
 - Added structured API, persistence, correlation, event, delivery, and acknowledgement CloudWatch log stages without logging secrets or raw coordinates.
 - Added exact-session deploy, simulator provisioning, MQTT scenario, smoke, teardown, and zero-owned-resource verification tooling.
 - Updated FCM/MQTT alerts to carry `alert_id`, event identity/version/status, device identity, and timestamps.
+- Made FCM v1 delivery high-priority and data-only so Android's messaging service receives the authoritative alert payload in foreground and background execution paths; added a payload contract test.
 - Added AWS V2 contract tests and locally synthesized the CDK template; live AWS deployment remains unverified because AWS CLI/account authentication is unavailable on this host.
 - Added runtime-configured dashboard AWS mode for real cloud device/event/alert/ACK reads, explicit environment/session/region status, and honest unavailable states for local-only controls.
 - Added a one-time EventBridge Scheduler expiry backstop whose cleanup Lambda verifies exact session ownership, refuses shared/unexpected IoT credentials, and requests deletion of only its own stack.

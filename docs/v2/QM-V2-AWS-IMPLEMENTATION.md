@@ -36,6 +36,8 @@ The stack owns `DeviceState`, `Evidence`, `Events`, and `AlertDelivery` tables. 
 
 Structured JSON log stages include API receipt, ingress receipt, heartbeat/evidence persistence, correlation evaluation, event transition, alert delivery, and acknowledgement. Useful identifiers include request, session, device, evidence, event, alert, provenance, and run IDs. Raw coordinates, API keys, Firebase tokens, and credentials are not logged.
 
+When the optional SNS platform application is configured, the dispatcher emits a high-priority, data-only FCM HTTP v1 message. This ensures `FirebaseMessagingService` receives the same `alert_id`, event identity/version/status, target device, and creation timestamp in foreground and background paths so Android can deduplicate, persist details, notify, and explicitly ACK. Live delivery still requires account-owned Firebase/SNS configuration and a device.
+
 ## Deploy and inspect
 
 Prerequisites are a configured AWS CLI, authenticated account, Python environment from `scripts/setup.ps1`, Node/npx, and permission to create the listed serverless resources.

@@ -34,7 +34,7 @@ The V2 local control plane, authoritative scenario engine, observability contrac
 | Gate | Result |
 |---|---|
 | Python compilation | PASS |
-| pytest | PASS — 65 tests (previous local coverage retained; AWS lifecycle tests added) |
+| pytest | PASS — 66 tests (previous local coverage retained; AWS lifecycle/FCM contract tests added) |
 | Ruff critical repository rules | PASS |
 | Ruff E4/E7/E9/F on V2-modified modules | PASS |
 | secret scan | PASS |
