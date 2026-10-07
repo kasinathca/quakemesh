@@ -23,7 +23,7 @@ This repository contains the verified local V2 system, the Android V2 client fou
 - MQTT alert dispatch for simulator Things;
 - optional Amazon SNS → Firebase Cloud Messaging path for Android;
 - API Gateway REST API, with API-key-gated write fallback and public read-only dashboard endpoints;
-- EventBridge scheduled event resolution;
+- EventBridge scheduled event resolution plus a one-time, exact-session expiry cleanup backstop;
 - CloudWatch Lambda error alarms and X-Ray tracing;
 - encrypted/versioned S3 experiment archive;
 - static React/strict-TypeScript/Vite operations dashboard with bundled Leaflet, H3 polygon overlays, nine feature views, logs, ACK, reset, and export;
@@ -304,7 +304,7 @@ The CDK stack creates only managed/serverless services:
 - Lambda;
 - DynamoDB;
 - API Gateway;
-- EventBridge;
+- EventBridge and EventBridge Scheduler;
 - SNS integration hooks;
 - CloudWatch alarms/X-Ray.
 

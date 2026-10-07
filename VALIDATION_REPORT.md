@@ -1,6 +1,6 @@
 # QuakeMesh V1 — Release Validation Report
 
-> **V2 validation update — 2026-10-08:** the current Windows host completed `scripts/validate.ps1` with **14 PASS, 3 explicit SKIP, 0 FAIL**. Results include 62 Python tests, strict TypeScript, zero-warning ESLint, 6 Vitest tests, a production Vite build, and 2 Playwright E2E tests. Android debug APK assembly/lint and AWS V2 CDK synthesis were also run separately and passed. Android emulator/physical-device behavior, AWS live deployment/cleanup, and FCM remain explicitly unverified. The remainder of this file is retained as the historical V1 packaging report; current evidence is in `docs/v2/QM-V2-COMPLETION-REPORT.md` and `docs/v2/QM-V2-AWS-IMPLEMENTATION.md`.
+> **V2 validation update — 2026-10-08:** the current Windows host completed `scripts/validate.ps1` with **14 PASS, 3 explicit SKIP, 0 FAIL**. Results include 65 Python tests, strict TypeScript, zero-warning ESLint, 6 Vitest tests, a production Vite build, and 2 Playwright E2E tests. Android debug APK assembly/lint and AWS V2 CDK synthesis (including the one-time expiry cleanup schedule) were also run separately and passed. Android emulator/physical-device behavior, AWS live deployment/cleanup execution, and FCM remain explicitly unverified. The remainder of this file is retained as the historical V1 packaging report; current evidence is in `docs/v2/QM-V2-COMPLETION-REPORT.md` and `docs/v2/QM-V2-AWS-IMPLEMENTATION.md`.
 
 **Release:** 1.0.1  
 **Validation date:** 2026-09-13  

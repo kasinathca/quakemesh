@@ -19,6 +19,7 @@ from aws_cdk import (
     aws_lambda as lambda_,
     aws_lambda_event_sources as lambda_events,
     aws_logs as logs,
+    aws_scheduler as scheduler,
 )
 from constructs import Construct
 
@@ -154,6 +155,7 @@ class QuakeMeshStack(Stack):
         platform_arn = os.getenv("QM_SNS_PLATFORM_APPLICATION_ARN", "")
         if platform_arn:
             common_env["QM_SNS_PLATFORM_APPLICATION_ARN"] = platform_arn
+        policy_name = f"QuakeMeshV2-{session_id}-DevicePolicy"
 
         functions: dict[str, lambda_.Function] = {}
 
@@ -196,6 +198,9 @@ class QuakeMeshStack(Stack):
         )
         dispatcher = function("DispatcherFn", "aws.lambdas.dispatcher.handler", 30, 384, (), 1)
         resolver = function("ResolverFn", "aws.lambdas.resolver.handler", 20, 256)
+        cleanup = function("CleanupFn", "aws.lambdas.cleanup.handler", 60, 256)
+        cleanup.add_environment("QM_STACK_NAME", self.stack_name)
+        cleanup.add_environment("QM_IOT_POLICY_NAME", policy_name)
 
         device.grant_read_write_data(ingress)
         evidence.grant_write_data(ingress)
@@ -208,6 +213,43 @@ class QuakeMeshStack(Stack):
         device.grant_read_data(dispatcher)
         alert.grant_read_write_data(dispatcher)
         event.grant_read_write_data(resolver)
+        cleanup.add_to_role_policy(
+            iam.PolicyStatement(actions=["cloudformation:DeleteStack"], resources=[self.stack_id])
+        )
+        cleanup.add_to_role_policy(
+            iam.PolicyStatement(actions=["iot:ListThings"], resources=["*"])
+        )
+        owned_thing_arn = self.format_arn(
+            service="iot", resource="thing", resource_name=f"QM-{session_id}-SIM-*"
+        )
+        certificate_arn = self.format_arn(service="iot", resource="cert", resource_name="*")
+        policy_arn = self.format_arn(service="iot", resource="policy", resource_name=policy_name)
+        cleanup.add_to_role_policy(
+            iam.PolicyStatement(
+                actions=[
+                    "iot:DeleteThing",
+                    "iot:DetachThingPrincipal",
+                    "iot:ListThingPrincipals",
+                ],
+                resources=[owned_thing_arn],
+            )
+        )
+        cleanup.add_to_role_policy(
+            iam.PolicyStatement(
+                actions=[
+                    "iot:DeleteCertificate",
+                    "iot:ListAttachedPolicies",
+                    "iot:ListPrincipalThings",
+                    "iot:UpdateCertificate",
+                ],
+                resources=[certificate_arn],
+            )
+        )
+        cleanup.add_to_role_policy(
+            iam.PolicyStatement(
+                actions=["iot:DetachPolicy"], resources=[policy_arn, certificate_arn]
+            )
+        )
         correlator.add_event_source(
             lambda_events.DynamoEventSource(
                 evidence,
@@ -343,7 +385,7 @@ class QuakeMeshStack(Stack):
         policy = iot.CfnPolicy(
             self,
             "DevicePolicy",
-            policy_name=f"QuakeMeshV2-{session_id}-DevicePolicy",
+            policy_name=policy_name,
             policy_document=policy_document,
         )
 
@@ -396,6 +438,29 @@ class QuakeMeshStack(Stack):
             "ResolverSchedule",
             schedule=events.Schedule.rate(Duration.minutes(1)),
             targets=[event_targets.LambdaFunction(resolver)],
+        )
+        scheduler_role = iam.Role(
+            self,
+            "ExpirySchedulerRole",
+            assumed_by=iam.ServicePrincipal("scheduler.amazonaws.com"),
+        )
+        cleanup.grant_invoke(scheduler_role)
+        scheduler.CfnSchedule(
+            self,
+            "ExpirySchedule",
+            name=f"QMV2-{session_id}-Expiry",
+            description=f"Delete the exact QuakeMesh V2 demo session {session_id} at expiry",
+            flexible_time_window=scheduler.CfnSchedule.FlexibleTimeWindowProperty(mode="OFF"),
+            schedule_expression=f"at({expires_at.removesuffix('Z')})",
+            schedule_expression_timezone="UTC",
+            target=scheduler.CfnSchedule.TargetProperty(
+                arn=cleanup.function_arn,
+                role_arn=scheduler_role.role_arn,
+                retry_policy=scheduler.CfnSchedule.RetryPolicyProperty(
+                    maximum_event_age_in_seconds=3600,
+                    maximum_retry_attempts=12,
+                ),
+            ),
         )
         for name, fn in functions.items():
             cloudwatch.Alarm(

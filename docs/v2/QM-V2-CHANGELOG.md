@@ -10,6 +10,7 @@
 - Updated FCM/MQTT alerts to carry `alert_id`, event identity/version/status, device identity, and timestamps.
 - Added AWS V2 contract tests and locally synthesized the CDK template; live AWS deployment remains unverified because AWS CLI/account authentication is unavailable on this host.
 - Added runtime-configured dashboard AWS mode for real cloud device/event/alert/ACK reads, explicit environment/session/region status, and honest unavailable states for local-only controls.
+- Added a one-time EventBridge Scheduler expiry backstop whose cleanup Lambda verifies exact session ownership, refuses shared/unexpected IoT credentials, and requests deletion of only its own stack.
 
 ## 2026-10-07 — Android V2 foundation
 

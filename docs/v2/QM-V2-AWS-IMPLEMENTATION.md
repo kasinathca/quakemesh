@@ -8,7 +8,7 @@ The AWS V2 serverless foundation is implemented and locally synthesized. It is n
 
 ## Architecture
 
-Each demo is an isolated CloudFormation stack named `QuakeMesh-V2-Demo-<session-id>`. The stack owns API Gateway, five Lambdas (API, ingress, correlator, dispatcher, resolver), four on-demand DynamoDB tables, two IoT rules, a session-specific IoT policy, EventBridge resolution schedule, explicit one-week Lambda log groups, X-Ray tracing, and error alarms. No EC2, VPC, NAT Gateway, RDS, ECS, EKS, or retained S3 bucket is created.
+Each demo is an isolated CloudFormation stack named `QuakeMesh-V2-Demo-<session-id>`. The stack owns API Gateway, six Lambdas (API, ingress, correlator, dispatcher, resolver, expiry cleanup), four on-demand DynamoDB tables, two IoT rules, a session-specific IoT policy, an EventBridge resolution schedule, a one-time EventBridge Scheduler cleanup target, explicit one-week Lambda log groups, X-Ray tracing, and error alarms. No EC2, VPC, NAT Gateway, RDS, ECS, EKS, or retained S3 bucket is created.
 
 HTTPS from Android is physical provenance. AWS IoT simulator topics are session-specific and are stored as scenario provenance with the session ID as the run partition. Correlation queries only the inserted evidence partition, and active event merging and alert targeting retain the same provenance/run boundary. Observation payloads remain schema `1.0`; API responses use V2 envelopes.
 
@@ -68,7 +68,7 @@ Provision and run session-owned IoT simulators:
 
 Teardown refuses to act without matching local account/region/session/stack metadata. It deletes only simulator Things with the exact session prefix, destroys only the exact session stack, then checks CloudFormation absence, session tags, and exact-prefix IoT Things. The report is `CLEAN` only when no owned resources or verification errors remain; access denial is `INCOMPLETE`.
 
-CDK bootstrap resources are shared account prerequisites and are not claimed as session-owned or removed. Automatic expiry deletion is not yet implemented; `ExpiresAt` is ownership metadata and an operator-visible deadline, not a claim that cleanup will happen without the teardown command.
+CDK bootstrap resources are shared account prerequisites and are not claimed as session-owned or removed. At `ExpiresAt`, a one-time Scheduler invocation runs the session cleanup Lambda. It selects IoT Things by both exact `SessionId` attribute and exact simulator name prefix, verifies QuakeMesh ownership, refuses shared certificates or unexpected policies, removes only verified session simulator credentials, and requests deletion of its own exact CloudFormation stack. Failures leave the stack available for bounded Scheduler retries. This is a safety backstop; operators must still use deterministic teardown and require a `CLEAN` verification report.
 
 ## Dashboard cloud mode
 
@@ -85,4 +85,4 @@ The ignored production `config.js` receives the demo API URL/key, region, sessio
 
 All application resources are on-demand/serverless. Normal demo traffic should remain low-cost, but deployment creates billable AWS resources and must be torn down. The exact account and price are not inferred locally.
 
-Locally verified: Python compilation, Ruff, focused AWS contract tests, direct CDK synthesis, and dashboard type/lint/unit/build checks for cloud mode. Not verified: AWS authentication, deployment, API endpoint, IoT certificates/traffic, Lambda invocation, DynamoDB writes, CloudWatch logs, alarms, FCM, automatic expiry cleanup, or zero-resource teardown against a real account.
+Locally verified: Python compilation, Ruff, focused AWS/cleanup contract tests, direct CDK synthesis including the one-time expiry schedule and scoped cleanup IAM, and dashboard type/lint/unit/build checks for cloud mode. Not verified: AWS authentication, deployment, API endpoint, IoT certificates/traffic, Lambda invocation, DynamoDB writes, CloudWatch logs, alarms, FCM, automatic expiry execution, or zero-resource teardown against a real account.

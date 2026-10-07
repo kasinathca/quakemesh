@@ -2,7 +2,7 @@
 
 ## Identity and ownership
 
-Session IDs use `QM-<UTC yyyyMMdd-HHmmss>-<4 hex>`. The exact session ID, stack ARN/name, account, region, created/expiry timestamps, and mode are stored locally without credentials. Taggable resources carry `Project=QuakeMesh`, `Environment=AcademicDemo`, `Ephemeral=true`, `SessionId`, `CreatedAt`, and `ExpiresAt`.
+Session IDs use `qm-<UTC yyyyMMdd-HHmmss>-<4 hex>`. The exact session ID, stack ARN/name, account, region, expiry timestamp, and mode are stored in the ignored runtime configuration without long-lived credentials. Taggable stack resources carry `Project=QuakeMesh`, `Architecture=V2`, `Environment=AcademicDemo`, `Ephemeral=true`, `SessionId`, and `ExpiresAt`.
 
 ## State machine
 
@@ -21,8 +21,8 @@ stateDiagram-v2
   Incomplete --> Destroying: recover
 ```
 
-`session_start` validates STS identity and refuses an unknown conflicting session. TTL is 60–240 minutes, default 120. A one-time EventBridge Scheduler target may delete only the exact session stack and explicitly recorded out-of-stack IoT principals. Normal stop disables/deletes certificates, exports evidence, deletes the stack, removes dedicated deployment assets when ownership is proven, and verifies each service.
+`deploy.ps1` validates STS identity and refuses an existing conflicting stack. TTL is 60–240 minutes, default 120. A one-time EventBridge Scheduler target invokes a cleanup Lambda that selects simulator Things by exact session attribute and name prefix, refuses shared certificates or unexpected policies, deletes only verified session credentials, and then requests deletion of its own exact stack. Normal `destroy.ps1` performs the same exact-prefix IoT cleanup, deletes the exact stack, and verifies owned resources are absent.
 
-Strict mode sets session S3, DynamoDB, managed log groups, schedules, and other session storage to `DESTROY`; S3 uses automatic object deletion. Account-level budgets and shared CDK bootstrap resources are outside session teardown. A dedicated qualifier/bootstrap may be removed only when metadata proves exclusive QuakeMesh ownership.
+All four DynamoDB tables, managed log groups, schedules, and Lambda layers use stack deletion semantics. The V2 stack creates no retained S3 bucket; CDK deployment assets and shared bootstrap resources are account prerequisites outside session ownership. Account-level budgets are also outside session teardown.
 
-Cleanup reports use `CLEAN` or `INCOMPLETE`; API errors and access-denied results are not interpreted as absence.
+Cleanup reports use `CLEAN` or `INCOMPLETE`; API errors and access-denied results are not interpreted as absence. Automatic cleanup is a backstop and does not replace a post-demo `destroy.ps1` run plus `CLEAN` verification.

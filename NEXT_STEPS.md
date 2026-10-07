@@ -32,7 +32,7 @@ The PowerShell runner now calls the scenario-control API and polls its authorita
 4. Install/configure AWS CLI, verify the intended account/region, and deploy the synthesized session-scoped V2 stack.
 5. Run the AWS heartbeat/trigger smoke script, inspect API Gateway/Lambda/DynamoDB/CloudWatch, then run an IoT distributed scenario and compare correlation behavior with local V2.
 6. Launch the implemented dashboard AWS mode with the deployed session config and verify real device/event/alert/ACK visibility.
-7. Validate exact-session teardown and zero-owned-resource reporting, then add automatic expiry cleanup as a backstop.
+7. Validate exact-session manual teardown, the one-time expiry cleanup backstop, and zero-owned-resource reporting in the intended AWS account.
 8. Configure and validate opt-in FCM delivery only after core cloud traffic is proven.
 
 Keep the following explicitly separate in reports: local verification, Android build/device verification, AWS synthesis, AWS live deployment, and FCM delivery. None implies another.

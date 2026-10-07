@@ -26,6 +26,9 @@ def test_aws_v2_stack_is_session_owned_and_destroyable():
         assert value in s
     assert "RemovalPolicy.RETAIN" not in s
     assert s.count("removal_policy=RemovalPolicy.DESTROY") >= 6
+    assert 'schedule_expression=f"at({expires_at.removesuffix(\'Z\')})"' in s
+    assert '"cloudformation:DeleteStack"' in s
+    assert '"iot:ListThings"' in s
 
 def test_aws_v2_api_and_provenance_contracts_are_present():
     api=(ROOT/"aws/lambdas/api.py").read_text()

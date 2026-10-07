@@ -34,7 +34,7 @@ The V2 local control plane, authoritative scenario engine, observability contrac
 | Gate | Result |
 |---|---|
 | Python compilation | PASS |
-| pytest | PASS — 58 tests (previous 50 retained) |
+| pytest | PASS — 65 tests (previous local coverage retained; AWS lifecycle tests added) |
 | Ruff critical repository rules | PASS |
 | Ruff E4/E7/E9/F on V2-modified modules | PASS |
 | secret scan | PASS |
@@ -91,7 +91,7 @@ This is source, contract, synthesis, and local browser evidence. No live AWS end
 ## Explicitly not verified
 
 - Android emulator or physical-device UI/sensor/location/network behavior; build and lint are verified separately in the addendum.
-- AWS live deployment, endpoint behavior, account ownership, automatic expiry cleanup, or live teardown. Session ownership, strict teardown source, V2 envelopes/provenance/telemetry, and CDK synthesis are verified separately as of 2026-10-08.
+- AWS live deployment, endpoint behavior, account ownership, automatic expiry execution, or live teardown. Session ownership, strict manual/automatic cleanup source, V2 envelopes/provenance/telemetry, and CDK synthesis are verified separately as of 2026-10-08.
 - AWS reset/export controls; they are not part of the current cloud slice.
 - AWS IoT delivery, DynamoDB records, CloudWatch behavior, or costs.
 - Live FCM delivery or physical phone receipt.
