@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+
 from botocore.exceptions import ClientError
 
 from .common import boto3, env, log
@@ -71,6 +73,26 @@ def delete_owned_thing(iot, thing_name: str, policy_name: str) -> None:
     iot.delete_thing(thingName=thing_name)
 
 
+def delete_owned_endpoints(sns, platform_arn: str, session_id: str) -> int:
+    """Delete only endpoints carrying this exact session ownership marker."""
+    marker = f"QuakeMesh:{session_id}"
+    deleted = 0
+    token: str | None = None
+    while True:
+        request = {"PlatformApplicationArn": platform_arn}
+        if token:
+            request["NextToken"] = token
+        response = sns.list_endpoints_by_platform_application(**request)
+        for endpoint in response.get("Endpoints", []):
+            if endpoint.get("Attributes", {}).get("CustomUserData") != marker:
+                continue
+            sns.delete_endpoint(EndpointArn=str(endpoint["EndpointArn"]))
+            deleted += 1
+        token = response.get("NextToken")
+        if not token:
+            return deleted
+
+
 def handler(event, context):
     session_id = env("QM_SESSION_ID")
     stack_name = env("QM_STACK_NAME")
@@ -86,8 +108,25 @@ def handler(event, context):
         delete_owned_thing(iot, name, policy_name)
         log("SESSION_IOT_THING_DELETED", session_id=session_id, device_id=name)
 
+    deleted_endpoints = 0
+    platform_arn = os.getenv("QM_SNS_PLATFORM_APPLICATION_ARN", "")
+    if platform_arn:
+        deleted_endpoints = delete_owned_endpoints(
+            boto3.client("sns", region_name=region), platform_arn, session_id
+        )
+        log(
+            "SESSION_SNS_ENDPOINTS_DELETED",
+            session_id=session_id,
+            endpoint_count=deleted_endpoints,
+        )
+
     # This call is intentionally last. Any ownership or IoT cleanup failure leaves
     # the stack in place so Scheduler retries can continue safely.
     cloudformation.delete_stack(StackName=stack_name)
     log("SESSION_STACK_DELETE_REQUESTED", session_id=session_id, stack_name=stack_name)
-    return {"session_id": session_id, "stack_name": stack_name, "deleted_things": len(things)}
+    return {
+        "session_id": session_id,
+        "stack_name": stack_name,
+        "deleted_things": len(things),
+        "deleted_endpoints": deleted_endpoints,
+    }

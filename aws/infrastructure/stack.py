@@ -301,6 +301,15 @@ class QuakeMeshStack(Stack):
             dispatcher.add_to_role_policy(
                 iam.PolicyStatement(actions=["sns:Publish"], resources=[endpoint_arn])
             )
+            cleanup.add_to_role_policy(
+                iam.PolicyStatement(
+                    actions=["sns:ListEndpointsByPlatformApplication"],
+                    resources=[platform_arn],
+                )
+            )
+            cleanup.add_to_role_policy(
+                iam.PolicyStatement(actions=["sns:DeleteEndpoint"], resources=[endpoint_arn])
+            )
 
         for kind in ("heartbeat", "trigger"):
             rule = iot.CfnTopicRule(
@@ -485,3 +494,5 @@ class QuakeMeshStack(Stack):
             "Region": self.region,
         }.items():
             CfnOutput(self, key, value=value)
+        if platform_arn:
+            CfnOutput(self, "SnsPlatformApplicationArn", value=platform_arn)

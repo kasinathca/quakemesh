@@ -24,7 +24,11 @@ def _topic_identity(topic:str,expected_kind:str)->str:
 def _register_fcm(token:str|None)->str|None:
     app=os.getenv("QM_SNS_PLATFORM_APPLICATION_ARN")
     if not token or not app:return None
-    out=_sns.create_platform_endpoint(PlatformApplicationArn=app,Token=token)
+    out=_sns.create_platform_endpoint(
+        PlatformApplicationArn=app,
+        Token=token,
+        CustomUserData=f"QuakeMesh:{env('QM_SESSION_ID')}",
+    )
     return out["EndpointArn"]
 
 def _device_key(device_id:str,provenance_type:str,scenario_run_id:str|None)->str:

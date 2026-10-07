@@ -159,7 +159,14 @@ def main() -> None:
         _prune_stale_principals(iot, thing, keep_arn=None)
         _remove_stale_local_material(directory)
 
-        cert = iot.create_keys_and_certificate(setAsActive=True)
+        cert = iot.create_keys_and_certificate(
+            setAsActive=True,
+            tags=[
+                {"Key": "Project", "Value": "QuakeMesh"},
+                {"Key": "SessionId", "Value": args.session_id},
+                {"Key": "Ephemeral", "Value": "true"},
+            ],
+        )
         cert_arn = str(cert["certificateArn"])
         try:
             _write_secret(directory / "certificate.pem.crt", str(cert["certificatePem"]))

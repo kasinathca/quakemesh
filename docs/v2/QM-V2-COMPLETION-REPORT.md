@@ -34,7 +34,7 @@ The V2 local control plane, authoritative scenario engine, observability contrac
 | Gate | Result |
 |---|---|
 | Python compilation | PASS |
-| pytest | PASS — 66 tests (previous local coverage retained; AWS lifecycle/FCM contract tests added) |
+| pytest | PASS — 68 tests (legacy database migration and exact-session SNS cleanup coverage added) |
 | Ruff critical repository rules | PASS |
 | Ruff E4/E7/E9/F on V2-modified modules | PASS |
 | secret scan | PASS |
@@ -95,5 +95,11 @@ This is source, contract, synthesis, and local browser evidence. No live AWS end
 - AWS reset/export controls; they are not part of the current cloud slice.
 - AWS IoT delivery, DynamoDB records, CloudWatch behavior, or costs.
 - Live FCM delivery or physical phone receipt.
+
+## Review harness addendum — 2026-10-08
+
+The Windows review harness now includes one-time preparation, idempotent/recovering START, read-only STATUS, exact STOP, independent Local/AWS dashboard serving directories, optional Android installation, AWS smoke and authoritative warm-up gates, AWS CLI v2 selection, path-with-spaces-safe CDK execution, pre-deployment ownership metadata, and inventory-backed teardown verification. Preparation passed on the actual spaced repository path and `CDKToolkit` was bootstrapped in `ap-south-1`.
+
+This addendum is implementation and non-mutating/preparation evidence only. The safety gate did not permit creation of the real session stack without a direct chat approval, so first/fresh/idempotent live START and STOP/CLEAN remain unverified and the harness is not yet declared READY.
 
 Those areas remain future phases and must not be inferred from the local completion result.

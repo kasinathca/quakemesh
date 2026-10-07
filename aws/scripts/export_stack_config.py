@@ -45,6 +45,8 @@ def main() -> None:
             "alerts": outputs["AlertTableName"],
         },
     }
+    if outputs.get("SnsPlatformApplicationArn"):
+        config["sns_platform_application_arn"] = outputs["SnsPlatformApplicationArn"]
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(config, indent=2, default=str), encoding="utf-8")
     print(f"Wrote {args.output}; it contains a controlled-demo API key and is gitignored.")

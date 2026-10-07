@@ -36,9 +36,6 @@ CREATE TABLE IF NOT EXISTS evidence(
  transport TEXT NOT NULL,
  scenario_run_id TEXT
 );
-CREATE INDEX IF NOT EXISTS idx_evidence_time ON evidence(observed_at_ms);
-CREATE INDEX IF NOT EXISTS idx_evidence_cell_time ON evidence(correlation_cell,observed_at_ms);
-CREATE INDEX IF NOT EXISTS idx_evidence_run_time ON evidence(scenario_run_id,observed_at_ms);
 CREATE TABLE IF NOT EXISTS events(
  event_id TEXT PRIMARY KEY,
  status TEXT NOT NULL,
@@ -54,8 +51,6 @@ CREATE TABLE IF NOT EXISTS events(
  provenance_type TEXT NOT NULL DEFAULT 'physical',
  scenario_run_id TEXT
 );
-CREATE INDEX IF NOT EXISTS idx_events_status_updated ON events(status,updated_at_ms);
-CREATE INDEX IF NOT EXISTS idx_events_run ON events(scenario_run_id,updated_at_ms);
 CREATE TABLE IF NOT EXISTS alerts(
  alert_id TEXT PRIMARY KEY,
  event_id TEXT NOT NULL,
@@ -72,7 +67,6 @@ CREATE TABLE IF NOT EXISTS alerts(
  failure_detail TEXT,
  UNIQUE(event_id,event_version,device_id)
 );
-CREATE INDEX IF NOT EXISTS idx_alerts_run ON alerts(scenario_run_id,created_at_ms);
 CREATE TABLE IF NOT EXISTS scenario_runs(
  run_id TEXT PRIMARY KEY,
  scenario TEXT NOT NULL,
@@ -91,8 +85,6 @@ CREATE TABLE IF NOT EXISTS scenario_runs(
  event_ids_json TEXT NOT NULL,
  error TEXT
 );
-CREATE INDEX IF NOT EXISTS idx_scenario_runs_created ON scenario_runs(created_at_ms DESC);
-CREATE INDEX IF NOT EXISTS idx_scenario_runs_active ON scenario_runs(status,created_at_ms);
 CREATE TABLE IF NOT EXISTS scenario_stages(
  stage_id INTEGER PRIMARY KEY AUTOINCREMENT,
  run_id TEXT NOT NULL,
@@ -111,6 +103,17 @@ CREATE TABLE IF NOT EXISTS scenario_stages(
  FOREIGN KEY(run_id) REFERENCES scenario_runs(run_id) ON DELETE CASCADE,
  UNIQUE(run_id,sequence)
 );
+"""
+
+INDEXES = """
+CREATE INDEX IF NOT EXISTS idx_evidence_time ON evidence(observed_at_ms);
+CREATE INDEX IF NOT EXISTS idx_evidence_cell_time ON evidence(correlation_cell,observed_at_ms);
+CREATE INDEX IF NOT EXISTS idx_evidence_run_time ON evidence(scenario_run_id,observed_at_ms);
+CREATE INDEX IF NOT EXISTS idx_events_status_updated ON events(status,updated_at_ms);
+CREATE INDEX IF NOT EXISTS idx_events_run ON events(scenario_run_id,updated_at_ms);
+CREATE INDEX IF NOT EXISTS idx_alerts_run ON alerts(scenario_run_id,created_at_ms);
+CREATE INDEX IF NOT EXISTS idx_scenario_runs_created ON scenario_runs(created_at_ms DESC);
+CREATE INDEX IF NOT EXISTS idx_scenario_runs_active ON scenario_runs(status,created_at_ms);
 CREATE INDEX IF NOT EXISTS idx_scenario_stages_run ON scenario_stages(run_id,sequence);
 """
 
@@ -129,6 +132,7 @@ class SQLiteRepository:
         with self._connect() as connection:
             connection.executescript(SCHEMA)
             self._migrate(connection)
+            connection.executescript(INDEXES)
 
     def _connect(self) -> sqlite3.Connection:
         connection = sqlite3.connect(self.path, timeout=10)

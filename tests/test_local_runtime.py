@@ -1,7 +1,31 @@
+import sqlite3
+
 from quakemesh_core.config import DetectionConfig
 from quakemesh_core.geo import SyntheticGeoIndex
 from local_runtime.repository import SQLiteRepository
 from local_runtime.service import QuakeMeshService
+
+
+def test_repository_migrates_legacy_tables_before_creating_v2_indexes(tmp_path):
+    database = tmp_path / "legacy.db"
+    with sqlite3.connect(database) as connection:
+        connection.executescript(
+            """
+            CREATE TABLE evidence(
+              evidence_id TEXT PRIMARY KEY, bucket INTEGER NOT NULL,
+              device_id TEXT NOT NULL, seq INTEGER NOT NULL,
+              observed_at_ms INTEGER NOT NULL, h3_cell TEXT NOT NULL,
+              correlation_cell TEXT NOT NULL, motion_rms REAL NOT NULL,
+              motion_peak REAL NOT NULL, transport TEXT NOT NULL
+            );
+            """
+        )
+    SQLiteRepository(database)
+    with sqlite3.connect(database) as connection:
+        columns = {row[1] for row in connection.execute("PRAGMA table_info(evidence)")}
+        indexes = {row[1] for row in connection.execute("PRAGMA index_list(evidence)")}
+    assert "scenario_run_id" in columns
+    assert "idx_evidence_run_time" in indexes
 
 
 def cfg(): return DetectionConfig(h3_device_resolution=7,h3_correlation_resolution=7,min_devices=4,min_distinct_cells=3,max_cluster_grid_distance=4,evidence_window_ms=8000)

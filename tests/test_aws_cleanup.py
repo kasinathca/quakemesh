@@ -53,6 +53,30 @@ class FakeIoT:
         return record
 
 
+class FakeSns:
+    def __init__(self):
+        self.deleted: list[str] = []
+
+    def list_endpoints_by_platform_application(self, **kwargs):
+        assert kwargs["PlatformApplicationArn"] == "arn:platform"
+        return {
+            "Endpoints": [
+                {
+                    "EndpointArn": "arn:owned",
+                    "Attributes": {"CustomUserData": "QuakeMesh:session-1"},
+                },
+                {
+                    "EndpointArn": "arn:other-session",
+                    "Attributes": {"CustomUserData": "QuakeMesh:session-2"},
+                },
+                {"EndpointArn": "arn:unmarked", "Attributes": {}},
+            ]
+        }
+
+    def delete_endpoint(self, **kwargs):
+        self.deleted.append(kwargs["EndpointArn"])
+
+
 def test_owned_things_requires_attribute_and_exact_name_prefix():
     iot = FakeIoT()
     assert cleanup.owned_things(iot, "session-1") == [
@@ -85,3 +109,9 @@ def test_cleanup_refuses_shared_certificate_before_mutation():
             iot, "QM-session-1-SIM-0001", "QuakeMeshV2-session-1-DevicePolicy"
         )
     assert not any(name.startswith("delete_") or name.startswith("detach_") for name, _ in iot.calls)
+
+
+def test_cleanup_deletes_only_exact_session_sns_endpoints():
+    sns = FakeSns()
+    assert cleanup.delete_owned_endpoints(sns, "arn:platform", "session-1") == 1
+    assert sns.deleted == ["arn:owned"]
