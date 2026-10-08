@@ -91,9 +91,12 @@ Invoke-CdkPathSafe -InfraDirectory $Infra -CdkVenv $CdkVenv -AwsCliPath $AwsCli 
 Invoke-CdkPathSafe -InfraDirectory $Infra -CdkVenv $CdkVenv -AwsCliPath $AwsCli -Profile $Profile -CdkArguments (@(
   "deploy", $StackName, "--require-approval", "never"
 ))
+if ($Profile) { $env:AWS_PROFILE = $Profile }
 
 $ConfigPath = Join-Path $SessionDir "runtime-config.json"
-& $RootPy aws/scripts/export_stack_config.py --stack-name $StackName --session-id $SessionId --region $Region --output $ConfigPath
+$exportArguments = @("aws/scripts/export_stack_config.py", "--stack-name", $StackName, "--session-id", $SessionId, "--region", $Region, "--output", $ConfigPath)
+if ($Profile) { $exportArguments += @("--profile", $Profile) }
+& $RootPy @exportArguments
 if ($LASTEXITCODE -ne 0) { throw "Runtime configuration export failed." }
 Write-Host "AWS V2 session deployed: $StackName" -ForegroundColor Green
 Write-Host "Expires at: $ExpiresAt" -ForegroundColor Yellow

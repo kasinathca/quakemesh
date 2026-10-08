@@ -1,5 +1,12 @@
 # QuakeMesh V2 changelog
 
+## 2026-10-08 — live AWS lifecycle verification
+
+- Completed two distinct default 25-device START→READY→STOP/CLEAN sessions in account `101541767123`, region `ap-south-1`, plus active-session START reuse and already-stopped STOP.
+- Verified HTTPS smoke, 50-record MQTT distributed warm-up with zero errors, one confirmed event, 17 alerts, live status reads, Android APK assembly, exact resource inventory teardown, zero owned stacks, and stopped local ports.
+- Hardened AWS profile propagation, IoT ownership/provisioning, Lambda layer imports, IoT SQL aliases, simulator SDK future handling, teardown verification, Windows process/state handling, optional ADB detection, and workspace-owned pytest temp usage based on live findings.
+- Retained shared `CDKToolkit` and content-addressed assets by design; physical Android, FCM delivery, and automatic expiry execution remain separate unverified scopes.
+
 ## 2026-10-08 — AWS V2 foundation
 
 - Replaced the fixed-name/retained V1 deployment surface with session-scoped V2 stack names, tags, expiry metadata, policies, topics, logs, and destroy-on-teardown state.
@@ -9,7 +16,7 @@
 - Added exact-session deploy, simulator provisioning, MQTT scenario, smoke, teardown, and zero-owned-resource verification tooling.
 - Updated FCM/MQTT alerts to carry `alert_id`, event identity/version/status, device identity, and timestamps.
 - Made FCM v1 delivery high-priority and data-only so Android's messaging service receives the authoritative alert payload in foreground and background execution paths; added a payload contract test.
-- Added AWS V2 contract tests and locally synthesized the CDK template; live AWS deployment remains unverified because AWS CLI/account authentication is unavailable on this host.
+- Added AWS V2 contract tests and locally synthesized the CDK template; the later live-lifecycle section above records the subsequent deployment evidence.
 - Added runtime-configured dashboard AWS mode for real cloud device/event/alert/ACK reads, explicit environment/session/region status, and honest unavailable states for local-only controls.
 - Added a one-time EventBridge Scheduler expiry backstop whose cleanup Lambda verifies exact session ownership, refuses shared/unexpected IoT credentials, and requests deletion of only its own stack.
 

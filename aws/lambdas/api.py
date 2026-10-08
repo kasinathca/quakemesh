@@ -6,10 +6,10 @@ from decimal import Decimal
 
 from botocore.exceptions import ClientError
 
+from .common import boto3, env, failure, log, now_ms, request_id, success
 from quakemesh_core.geo import H3GeoIndex
 from quakemesh_core.validation import ValidationError
 
-from .common import boto3, env, failure, log, now_ms, request_id, success
 from .ingress import process
 
 _geo = None
@@ -201,6 +201,13 @@ def handler(event, context):
         return failure(request, 422, "REQUEST_VALIDATION_FAILED", str(error))
     except ValueError as error:
         return failure(request, 422, "REQUEST_VALIDATION_FAILED", str(error))
-    except Exception:
-        log("API_REQUEST_FAILED", request, method=method, path=path)
+    except Exception as error:
+        log(
+            "API_REQUEST_FAILED",
+            request,
+            method=method,
+            path=path,
+            error_type=type(error).__name__,
+            error_message=str(error),
+        )
         return failure(request, 500, "INTERNAL_ERROR", "The request could not be completed.")

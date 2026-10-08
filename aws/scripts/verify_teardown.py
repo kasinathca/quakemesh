@@ -11,7 +11,12 @@ from urllib.parse import urlparse
 import boto3
 from botocore.exceptions import ClientError
 
-NOT_FOUND = {"NotFoundException", "ResourceNotFoundException", "ResourceNotFoundFault"}
+NOT_FOUND = {
+    "NoSuchEntity",
+    "NotFoundException",
+    "ResourceNotFoundException",
+    "ResourceNotFoundFault",
+}
 
 
 def issue(service: str, error: ClientError) -> dict[str, str]:
@@ -53,6 +58,7 @@ def main() -> int:
     parser.add_argument("--stack-name", required=True)
     parser.add_argument("--session-id", required=True)
     parser.add_argument("--region", default="ap-south-1")
+    parser.add_argument("--profile")
     parser.add_argument("--runtime-config", type=Path)
     parser.add_argument("--resource-inventory", type=Path)
     parser.add_argument("--cdk-assets", type=Path)
@@ -64,6 +70,7 @@ def main() -> int:
     runtime = load_json(args.runtime_config)
     inventory = load_json(args.resource_inventory)
     assets_manifest = load_json(args.cdk_assets)
+    aws_session = boto3.Session(profile_name=args.profile) if args.profile else boto3.Session()
 
     def record(result: tuple[dict[str, str], dict[str, str] | None, dict[str, str] | None]) -> None:
         check, finding, error = result
@@ -73,11 +80,11 @@ def main() -> int:
         if error:
             errors.append(error)
 
-    cloudformation = boto3.client("cloudformation", region_name=args.region)
+    cloudformation = aws_session.client("cloudformation", region_name=args.region)
     record(absent_check("cloudformation_stack", "cloudformation", args.stack_name, lambda: cloudformation.describe_stacks(StackName=args.stack_name)))
 
     try:
-        tagging = boto3.client("resourcegroupstaggingapi", region_name=args.region)
+        tagging = aws_session.client("resourcegroupstaggingapi", region_name=args.region)
         tagged: list[str] = []
         token = ""
         while True:
@@ -89,13 +96,32 @@ def main() -> int:
             token = str(response.get("PaginationToken", ""))
             if not token:
                 break
-        checks.append({"name": "session_tagged_resources", "status": "PASS" if not tagged else "FAIL", "detail": "absent" if not tagged else f"{len(tagged)} remain"})
-        findings.extend({"type": "tagged_resource", "id": arn} for arn in tagged)
+        live_tagged: list[str] = []
+        stale_streams = 0
+        dynamodb = aws_session.client("dynamodb", region_name=args.region)
+        for arn in tagged:
+            if ":dynamodb:" in arn and ":table/" in arn and "/stream/" in arn:
+                table_name = arn.split(":table/", 1)[1].split("/stream/", 1)[0]
+                try:
+                    dynamodb.describe_table(TableName=table_name)
+                except ClientError as error:
+                    if str(error.response.get("Error", {}).get("Code", "")) == "ResourceNotFoundException":
+                        stale_streams += 1
+                        continue
+                    raise
+            live_tagged.append(arn)
+        detail = "absent"
+        if stale_streams:
+            detail = f"absent ({stale_streams} stale deleted-stream tag index entries ignored)"
+        if live_tagged:
+            detail = f"{len(live_tagged)} remain"
+        checks.append({"name": "session_tagged_resources", "status": "PASS" if not live_tagged else "FAIL", "detail": detail})
+        findings.extend({"type": "tagged_resource", "id": arn} for arn in live_tagged)
     except ClientError as error:
         checks.append({"name": "session_tagged_resources", "status": "UNKNOWN", "detail": "inspection failed"})
         errors.append(issue("resourcegroupstaggingapi", error))
 
-    iot = boto3.client("iot", region_name=args.region)
+    iot = aws_session.client("iot", region_name=args.region)
     prefix = f"QM-{args.session_id}-"
     try:
         things: list[str] = []
@@ -140,7 +166,7 @@ def main() -> int:
     clients: dict[str, Any] = {}
 
     def client(service: str):
-        clients.setdefault(service, boto3.client(service, region_name=args.region))
+        clients.setdefault(service, aws_session.client(service, region_name=args.region))
         return clients[service]
 
     verifiers: dict[str, tuple[str, Callable[[str], Any], Callable[[Any], bool] | None]] = {
@@ -207,7 +233,7 @@ def main() -> int:
                 continue
             seen_assets.add((bucket, key))
             try:
-                boto3.client("s3", region_name=region).head_object(Bucket=bucket, Key=key)
+                aws_session.client("s3", region_name=region).head_object(Bucket=bucket, Key=key)
                 bootstrap_assets.append({"bucket": bucket, "key": key, "status": "PRESENT_SHARED_NOT_DELETED"})
             except ClientError as error:
                 code = str(error.response.get("Error", {}).get("Code", ""))

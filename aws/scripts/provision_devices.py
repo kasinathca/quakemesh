@@ -112,6 +112,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Provision independent QuakeMesh AWS IoT simulator Things")
     parser.add_argument("--count", type=int, required=True)
     parser.add_argument("--region", default=os.getenv("AWS_REGION", "ap-south-1"))
+    parser.add_argument("--profile")
     parser.add_argument("--session-id", required=True)
     parser.add_argument("--out", default="artifacts/iot-devices")
     parser.add_argument("--prefix", required=True)
@@ -124,7 +125,8 @@ def main() -> None:
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
     root_ca(out.parent / "AmazonRootCA1.pem")
-    iot = boto3.client("iot", region_name=args.region)
+    session = boto3.Session(profile_name=args.profile) if args.profile else boto3.Session()
+    iot = session.client("iot", region_name=args.region)
 
     # Fail before creating anything if the CDK-managed policy is absent.
     policy_name = f"QuakeMeshV2-{args.session_id}-DevicePolicy"
@@ -136,12 +138,10 @@ def main() -> None:
         directory = out / thing
         directory.mkdir(parents=True, exist_ok=True)
         try:
-            created = iot.create_thing(
+            iot.create_thing(
                 thingName=thing,
                 attributePayload={"attributes": {"Project": "QuakeMesh", "SessionId": args.session_id}},
             )
-            if created.get("thingArn"):
-                iot.tag_resource(resourceArn=created["thingArn"], tags=[{"Key":"Project","Value":"QuakeMesh"},{"Key":"SessionId","Value":args.session_id}])
         except ClientError as exc:
             if _error_code(exc) != "ResourceAlreadyExistsException":
                 raise
@@ -159,14 +159,7 @@ def main() -> None:
         _prune_stale_principals(iot, thing, keep_arn=None)
         _remove_stale_local_material(directory)
 
-        cert = iot.create_keys_and_certificate(
-            setAsActive=True,
-            tags=[
-                {"Key": "Project", "Value": "QuakeMesh"},
-                {"Key": "SessionId", "Value": args.session_id},
-                {"Key": "Ephemeral", "Value": "true"},
-            ],
-        )
+        cert = iot.create_keys_and_certificate(setAsActive=True)
         cert_arn = str(cert["certificateArn"])
         try:
             _write_secret(directory / "certificate.pem.crt", str(cert["certificatePem"]))

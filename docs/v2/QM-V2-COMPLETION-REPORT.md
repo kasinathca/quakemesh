@@ -34,7 +34,7 @@ The V2 local control plane, authoritative scenario engine, observability contrac
 | Gate | Result |
 |---|---|
 | Python compilation | PASS |
-| pytest | PASS — 68 tests (legacy database migration and exact-session SNS cleanup coverage added) |
+| pytest | PASS — 76 tests (including live-lifecycle regression coverage for AWS scripts, MQTT SDK result shapes, Windows harness behavior, legacy migration, and exact-session cleanup) |
 | Ruff critical repository rules | PASS |
 | Ruff E4/E7/E9/F on V2-modified modules | PASS |
 | secret scan | PASS |
@@ -86,20 +86,26 @@ This does not revise or weaken the local control-plane evidence above. Emulator/
 
 The subsequent cloud milestone replaced the deployable V1 surface with a session-scoped V2 CDK stack and added the dashboard's runtime AWS adapter. CDK synthesis, Python tests, Ruff, strict TypeScript, ESLint, Vitest, the production dashboard build, and local Playwright coverage pass. The dashboard labels cloud mode as `AWS V2 Demo`, reads only real V2 health/device/event/alert responses, sends dashboard ACKs through the real API-key-gated route, and marks local-only controls unavailable instead of simulating their state.
 
-This is source, contract, synthesis, and local browser evidence. No live AWS endpoint or cloud record was available on this host, so deployment behavior and the dashboard's live AWS data path remain unverified.
+This source, contract, synthesis, and local browser evidence was subsequently extended by the live lifecycle evidence below.
 
 ## Explicitly not verified
 
 - Android emulator or physical-device UI/sensor/location/network behavior; build and lint are verified separately in the addendum.
-- AWS live deployment, endpoint behavior, account ownership, automatic expiry execution, or live teardown. Session ownership, strict manual/automatic cleanup source, V2 envelopes/provenance/telemetry, and CDK synthesis are verified separately as of 2026-10-08.
+- Automatic expiry execution; manual exact-session teardown is live-verified separately below.
 - AWS reset/export controls; they are not part of the current cloud slice.
-- AWS IoT delivery, DynamoDB records, CloudWatch behavior, or costs.
+- Detailed CloudWatch operational inspection and measured costs. Live IoT delivery, API ingress, DynamoDB-backed correlation/read paths, inventory, and teardown are verified separately below.
 - Live FCM delivery or physical phone receipt.
 
 ## Review harness addendum — 2026-10-08
 
 The Windows review harness now includes one-time preparation, idempotent/recovering START, read-only STATUS, exact STOP, independent Local/AWS dashboard serving directories, optional Android installation, AWS smoke and authoritative warm-up gates, AWS CLI v2 selection, path-with-spaces-safe CDK execution, pre-deployment ownership metadata, and inventory-backed teardown verification. Preparation passed on the actual spaced repository path and `CDKToolkit` was bootstrapped in `ap-south-1`.
 
-This addendum is implementation and non-mutating/preparation evidence only. The safety gate did not permit creation of the real session stack without a direct chat approval, so first/fresh/idempotent live START and STOP/CLEAN remain unverified and the harness is not yet declared READY.
+Direct authorization was subsequently provided for account `101541767123` in `ap-south-1`, and the live matrix below supersedes the earlier preparation-only limitation.
 
-Those areas remain future phases and must not be inferred from the local completion result.
+## Live AWS lifecycle addendum — 2026-10-08
+
+The review harness is READY for the verified no-phone/no-FCM presentation scope. Two distinct default 25-device sessions, `qm-20261008-055623-f221` and `qm-20261008-060601-ec40`, each reached `QUAKEMESH REVIEW ENVIRONMENT READY`. Each run passed HTTPS heartbeat/trigger smoke, provisioned 25 session-owned IoT Things and certificates, delivered 50 MQTT records with zero simulator errors, produced one confirmed event and 17 alerts, passed authoritative warm-up, built the Android debug APK, and truthfully reported `NOT CONNECTED - APK READY`.
+
+Re-running START during the first session reused the same session, stack, and three owned local processes. STATUS reported exactly one owned `CREATE_COMPLETE` stack, health PASS, 25 dynamic IoT Things, and live device/event/alert reads. Both STOP runs returned `CLEAN`; the verifier found the exact stack, Things, certificates, DynamoDB tables, Lambda functions/layer, alarms, log groups, IAM roles, IoT policy, Scheduler schedule, EventBridge rule, and API Gateway resources absent. A further STOP returned the clean already-stopped no-op result. Final STATUS reported zero owned QuakeMesh stacks, absent review state, restored local Android configuration, and ports 8000/8080/8081 stopped.
+
+Shared `CDKToolkit` resources and content-addressed assets remain intentionally retained because they are not exclusively session-owned. FCM was not configured and was reported `NOT_APPLICABLE`; no physical phone was used. Automatic expiry cleanup remains unexecuted live.

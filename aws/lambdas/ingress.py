@@ -81,9 +81,9 @@ def process(payload:dict,kind:str,topic:str|None=None,transport:str="aws-iot",re
     return _heartbeat(payload,topic,transport,provenance_type,scenario_run_id,request) if kind=="heartbeat" else _trigger(payload,topic,transport,provenance_type,scenario_run_id,request)
 
 def handler(event,context):
-    topic=event.get("_topic")
-    if not topic: raise ValidationError("IoT Rule must inject _topic=topic()")
+    topic=event.get("topic_path") or event.get("_topic")
+    if not topic: raise ValidationError("IoT Rule must inject topic_path=topic()")
     kind=topic.rsplit('/',1)[-1]
     if kind not in {"heartbeat","trigger"}: raise ValidationError("unsupported message kind")
-    payload={k:v for k,v in event.items() if k!="_topic"}
+    payload={k:v for k,v in event.items() if k not in {"topic_path","_topic"}}
     return process(payload,kind,topic,"aws-iot",provenance_type="scenario",scenario_run_id=env("QM_SESSION_ID"))

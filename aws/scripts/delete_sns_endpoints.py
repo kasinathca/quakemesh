@@ -10,6 +10,7 @@ import boto3
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=Path, required=True)
+    parser.add_argument("--profile")
     args = parser.parse_args()
     config = json.loads(args.config.read_text(encoding="utf-8-sig"))
     platform_arn = config.get("sns_platform_application_arn")
@@ -18,7 +19,8 @@ def main() -> None:
         return
     session_id = str(config["session_id"])
     marker = f"QuakeMesh:{session_id}"
-    sns = boto3.client("sns", region_name=str(config["region"]))
+    session = boto3.Session(profile_name=args.profile) if args.profile else boto3.Session()
+    sns = session.client("sns", region_name=str(config["region"]))
     token = ""
     deleted = 0
     while True:

@@ -157,6 +157,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Delete QuakeMesh simulator IoT Things and certificates safely")
     parser.add_argument("--cert-dir", default="artifacts/iot-devices")
     parser.add_argument("--region", default=os.getenv("AWS_REGION", "ap-south-1"))
+    parser.add_argument("--profile")
     parser.add_argument("--prefix", default="QM-SIM-")
     parser.add_argument(
         "--discover",
@@ -170,7 +171,8 @@ def main() -> None:
         parser.error("--prefix must be at least 3 characters")
 
     cert_dir = Path(args.cert_dir)
-    iot = boto3.client("iot", region_name=args.region)
+    session = boto3.Session(profile_name=args.profile) if args.profile else boto3.Session()
+    iot = session.client("iot", region_name=args.region)
     names = _local_things(cert_dir, args.prefix)
     if args.discover:
         names |= _cloud_things(iot, args.prefix)

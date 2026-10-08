@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from aws.scripts import delete_devices, upload_trace
+from aws.scripts import delete_devices, provision_devices, upload_trace
 
 
 class FakeIoT:
@@ -55,3 +55,12 @@ def test_trace_validation_rejects_arbitrary_json(tmp_path: Path):
         assert "trace_schema" in str(exc)
     else:
         raise AssertionError("invalid trace accepted")
+
+
+def test_iot_ownership_uses_supported_thing_attributes_and_certificate_association():
+    source = Path(provision_devices.__file__).read_text(encoding="utf-8")
+    assert '"Project": "QuakeMesh"' in source
+    assert '"SessionId": args.session_id' in source
+    assert "iot.create_keys_and_certificate(setAsActive=True)" in source
+    assert "iot.attach_thing_principal(thingName=thing, principal=cert_arn)" in source
+    assert "iot.tag_resource" not in source

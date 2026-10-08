@@ -18,6 +18,7 @@ $StackName = "QuakeMesh-V2-Demo-$SessionId"
 $SessionDir = Join-Path $Root "artifacts\aws-v2\$SessionId"
 $ConfigPath = Join-Path $SessionDir "runtime-config.json"
 $OwnershipPath = Join-Path $SessionDir "ownership.json"
+$InventoryPath = Join-Path $SessionDir "resource-inventory.json"
 $MetadataPath = if (Test-Path -LiteralPath $ConfigPath) { $ConfigPath } else { $OwnershipPath }
 if (!(Test-Path -LiteralPath $MetadataPath)) {
   throw "Refusing teardown without owned session metadata: $OwnershipPath"
@@ -55,7 +56,6 @@ if ($stackProbe.ExitCode -eq 0) {
     "cloudformation", "list-stack-resources", "--stack-name", $StackName,
     "--region", $Region, "--output", "json", "--no-cli-pager"
   ) -Quiet
-  $inventoryPath = Join-Path $SessionDir "resource-inventory.json"
   $inventoryDocument = ($inventoryResult.Output -join [Environment]::NewLine) | ConvertFrom-Json
   [ordered]@{
     schema_version = "2.0"
@@ -65,11 +65,11 @@ if ($stackProbe.ExitCode -eq 0) {
     resources = @($inventoryDocument.StackResourceSummaries | ForEach-Object {
       [ordered]@{
         logical_id = [string]$_.LogicalResourceId
-        physical_id = [string]$_.PhysicalResourceId
+        physical_id = $(if ($_.psobject.Properties["PhysicalResourceId"]) { [string]$_.PhysicalResourceId } else { "" })
         type = [string]$_.ResourceType
       }
     })
-  } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $inventoryPath -Encoding UTF8
+  } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $InventoryPath -Encoding UTF8
 }
 elseif (($stackProbe.Output -join " ") -notmatch 'does not exist|ValidationError') {
   throw "Unable to prove exact stack state before teardown: $($stackProbe.Output -join ' ')"
@@ -78,10 +78,14 @@ $RootPy = Join-Path $Root ".venv\Scripts\python.exe"
 if (!(Test-Path $RootPy)) { throw "Run .\scripts\setup.ps1 first." }
 $ThingPrefix = "QM-$SessionId-SIM-"
 $CertDir = Join-Path $SessionDir "iot-devices"
-& $RootPy aws/scripts/delete_devices.py --region $Region --prefix $ThingPrefix --cert-dir $CertDir --discover
+$deleteDeviceArguments = @("aws/scripts/delete_devices.py", "--region", $Region, "--prefix", $ThingPrefix, "--cert-dir", $CertDir, "--discover")
+if ($Profile) { $deleteDeviceArguments += @("--profile", $Profile) }
+& $RootPy @deleteDeviceArguments
 if ($LASTEXITCODE -ne 0) { throw "Exact-session IoT device cleanup failed." }
 if (Test-Path -LiteralPath $ConfigPath) {
-  & $RootPy aws/scripts/delete_sns_endpoints.py --config $ConfigPath
+  $deleteEndpointArguments = @("aws/scripts/delete_sns_endpoints.py", "--config", $ConfigPath)
+  if ($Profile) { $deleteEndpointArguments += @("--profile", $Profile) }
+  & $RootPy @deleteEndpointArguments
   if ($LASTEXITCODE -ne 0) { throw "Exact-session SNS endpoint cleanup failed." }
 }
 
@@ -92,6 +96,25 @@ if (!(Test-Path $CdkPy)) { throw "CDK environment missing. Run deploy/setup firs
 Invoke-CdkPathSafe -InfraDirectory $Infra -CdkVenv $CdkVenv -AwsCliPath $AwsCli -Profile $Profile -CdkArguments (@(
   "destroy", $StackName, "--force"
 ))
+if ($Profile) { $env:AWS_PROFILE = $Profile }
+
+# A scheduled Lambda can recreate its log group after CloudFormation deletes
+# the explicit LogGroup but before the rule/function deletion finishes. Remove
+# only the exact log-group names captured from this owned stack inventory.
+if (Test-Path -LiteralPath $InventoryPath) {
+  $capturedInventory = Get-Content -LiteralPath $InventoryPath -Raw | ConvertFrom-Json
+  foreach ($resource in @($capturedInventory.resources | Where-Object { $_.type -eq "AWS::Logs::LogGroup" -and $_.physical_id })) {
+    $deleteLogArguments = @(
+      "logs", "delete-log-group", "--log-group-name", [string]$resource.physical_id,
+      "--region", $Region, "--no-cli-pager"
+    )
+    if ($Profile) { $deleteLogArguments += @("--profile", $Profile) }
+    $deleteLog = Invoke-NativeCommandResult -FilePath $AwsCli -ArgumentList $deleteLogArguments -AllowedExitCodes @(0, 254, 255) -Quiet
+    if ($deleteLog.ExitCode -ne 0 -and ($deleteLog.Output -join " ") -notmatch "ResourceNotFoundException") {
+      throw "Exact-session log group cleanup failed for $($resource.physical_id): $($deleteLog.Output -join ' ')"
+    }
+  }
+}
 
 $verifyArguments = @(
   (Join-Path $Root "aws\scripts\verify_teardown.py"),
@@ -100,13 +123,14 @@ $verifyArguments = @(
   "--region", $Region,
   "--output", (Join-Path $SessionDir "teardown-report.json")
 )
+if ($Profile) { $verifyArguments += @("--profile", $Profile) }
 if (Test-Path -LiteralPath $ConfigPath) { $verifyArguments += @("--runtime-config", $ConfigPath) }
-if (Test-Path -LiteralPath (Join-Path $SessionDir "resource-inventory.json")) {
-  $verifyArguments += @("--resource-inventory", (Join-Path $SessionDir "resource-inventory.json"))
+if (Test-Path -LiteralPath $InventoryPath) {
+  $verifyArguments += @("--resource-inventory", $InventoryPath)
 }
 if (Test-Path -LiteralPath (Join-Path $SessionDir "cdk-assets.json")) {
   $verifyArguments += @("--cdk-assets", (Join-Path $SessionDir "cdk-assets.json"))
 }
-& $CdkPy @verifyArguments
+& $RootPy @verifyArguments
 if ($LASTEXITCODE -ne 0) { throw "Teardown verification is INCOMPLETE. Inspect the report." }
 Write-Host "CLEAN: exact session stack and owned resources are absent." -ForegroundColor Green

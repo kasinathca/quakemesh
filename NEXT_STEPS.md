@@ -1,6 +1,6 @@
 # QuakeMesh next steps
 
-The V2 local control-plane phase is complete on the current Windows host. The Android V2 API/domain foundation, monitoring interface, local-emulator configuration, alert identity, and ACK client compile into a debug APK and pass Android lint. A Windows review harness now prepares, starts, recovers, reports, and exactly stops local/AWS sessions; its preparation gate and CDK bootstrap passed in the intended account. The live session repetition matrix is still pending explicit mutation approval, so AWS deployment and CLEAN teardown are not yet claimed.
+The V2 local control-plane phase is complete on the current Windows host. The Android V2 API/domain foundation, monitoring interface, local-emulator configuration, alert identity, and ACK client compile into a debug APK and pass Android lint. The Windows review harness completed its real AWS lifecycle matrix in account `101541767123`, region `ap-south-1`: first START, idempotent START reuse, STOP/CLEAN, fresh isolated START, STOP/CLEAN, and already-stopped STOP. Final status reported zero owned QuakeMesh stacks, no active review state, and ports 8000/8080/8081 stopped.
 
 ## Reproduce the local evidence
 
@@ -29,10 +29,8 @@ The PowerShell runner now calls the scenario-control API and polls its authorita
 1. Run the Android debug APK on an emulator against local FastAPI at `http://10.0.2.2:8000`; verify heartbeat, trigger, physical provenance, alert polling, and idempotent ACK in SQLite/API views.
 2. Repeat sensor/location monitoring on a physical device using a reachable HTTPS endpoint; record permission and lifecycle evidence.
 3. Add Android instrumentation/accessibility coverage; focused V2 envelope/error/alert JVM tests are now present.
-4. Execute the required first/fresh/idempotent START→STOP matrix with `START_QUAKEMESH_REVIEW.cmd` and `STOP_QUAKEMESH_REVIEW.cmd`; retain each sanitized CLEAN report.
-5. Inspect live API Gateway/Lambda/DynamoDB/CloudWatch/IoT behavior and compare authoritative AWS correlation with Local V2.
-6. Verify the AWS dashboard's live device/event/alert/ACK data path during that session.
-7. Separately validate automatic expiry cleanup; manual exact-session STOP remains primary.
-8. Configure and validate opt-in FCM delivery only after core cloud traffic is proven.
+4. Separately validate automatic expiry cleanup; manual exact-session STOP is already verified and remains primary.
+5. Exercise and record the AWS dashboard ACK interaction in a browser against a live session; live reads and backend ACK routing are implemented, while this lifecycle run verified health/device/event/alert reads through STATUS.
+6. Configure and validate opt-in FCM delivery only after a physical device is available.
 
 Keep the following explicitly separate in reports: local verification, Android build/device verification, AWS synthesis, AWS live deployment, and FCM delivery. None implies another.

@@ -74,6 +74,12 @@ class AwsIotTransport:
         self._seen_alerts: set[tuple[str, str]] = set()
         self._lock = threading.RLock()
 
+    @staticmethod
+    def _wait(operation, timeout: float):
+        """Await AWS IoT SDK operations across bare-Future and tuple APIs."""
+        future = operation[0] if isinstance(operation, tuple) else operation
+        return future.result(timeout=timeout)
+
     def _on_alert(self, device_id: str):
         def callback(topic, payload, dup, qos, retain, **kwargs):
             try:
@@ -116,21 +122,27 @@ class AwsIotTransport:
             keep_alive_secs=30,
         )
         connection.connect().result(timeout=15)
-        connection.subscribe(
-            topic=f"quakemesh/v1/{self.session_id}/devices/{device_id}/alerts",
-            qos=self.mqtt.QoS.AT_LEAST_ONCE,
-            callback=self._on_alert(device_id),
-        ).result(timeout=10)
+        self._wait(
+            connection.subscribe(
+                topic=f"quakemesh/v1/{self.session_id}/devices/{device_id}/alerts",
+                qos=self.mqtt.QoS.AT_LEAST_ONCE,
+                callback=self._on_alert(device_id),
+            ),
+            timeout=10,
+        )
         self.connections[device_id] = connection
         return connection
 
     def _publish(self, device_id: str, kind: str, payload: dict) -> dict:
         topic = f"quakemesh/v1/{self.session_id}/devices/{device_id}/{kind}"
-        self._conn(device_id).publish(
-            topic=topic,
-            payload=json.dumps(payload),
-            qos=self.mqtt.QoS.AT_LEAST_ONCE,
-        ).result(timeout=10)
+        self._wait(
+            self._conn(device_id).publish(
+                topic=topic,
+                payload=json.dumps(payload),
+                qos=self.mqtt.QoS.AT_LEAST_ONCE,
+            ),
+            timeout=10,
+        )
         return {"published": True, "topic": topic}
 
     def heartbeat(self, device_id: str, payload: dict) -> dict:

@@ -10,9 +10,9 @@ $ErrorActionPreference = "Stop"
 $paths = Initialize-ReviewDirectories
 Set-Location $paths.Root
 
-function Save-State { param([hashtable]$Value) Write-ReviewState -State $Value }
+function Save-State { param([System.Collections.IDictionary]$Value) Write-ReviewState -State $Value }
 function Clear-StaleLocalState {
-    param([hashtable]$Value)
+    param([System.Collections.IDictionary]$Value)
     if ($Value.processes) { Stop-ManagedReviewProcesses -Processes @($Value.processes) }
     Restore-AndroidReviewConfiguration
     if ($Value.runtime_config) {
@@ -23,7 +23,7 @@ function Clear-StaleLocalState {
     if (Test-Path -LiteralPath $paths.Serve) { Remove-Item -LiteralPath $paths.Serve -Recurse -Force }
 }
 function Ensure-Process {
-    param([hashtable]$State, [string]$Name, [int]$Port, [string]$Script, [hashtable]$Arguments)
+    param([System.Collections.IDictionary]$State, [string]$Name, [int]$Port, [string]$Script, [hashtable]$Arguments)
     $existing = @($State.processes | Where-Object { $_.name -eq $Name }) | Select-Object -First 1
     if ($existing) {
         $status = Get-ManagedProcessStatus -Record $existing
@@ -66,7 +66,7 @@ if ($stateObject) {
     }
     elseif (Test-Path -LiteralPath $state.runtime_config) {
         $storedRuntime = Get-Content -LiteralPath $state.runtime_config -Raw | ConvertFrom-Json
-        if ([DateTimeOffset]::Parse([string]$storedRuntime.expires_at) -lt [DateTimeOffset]::UtcNow.AddMinutes(30)) {
+        if ([DateTimeOffset]$storedRuntime.expires_at -lt [DateTimeOffset]::UtcNow.AddMinutes(30)) {
             Write-Warning "Stored session is expired or too close to expiry; cleaning it before creating a fresh session."
             & (Join-Path $PSScriptRoot "stop.ps1") -Profile $Profile -Region $Region -AwsCliPath $aws.AwsCli
             if ($LASTEXITCODE -ne 0) { throw "Expired-session teardown failed." }
@@ -85,7 +85,9 @@ if ($null -eq $state) {
         $runtimeConfig = Join-Path $sessionDir "runtime-config.json"
         $env:AWS_PROFILE = $Profile
         $env:AWS_REGION = $Region
-        & (Join-Path $paths.Root ".venv\Scripts\python.exe") aws/scripts/export_stack_config.py --stack-name $stack.StackName --session-id $sessionId --region $Region --output $runtimeConfig
+        $exportArguments = @("aws/scripts/export_stack_config.py", "--stack-name", $stack.StackName, "--session-id", $sessionId, "--region", $Region, "--output", $runtimeConfig)
+        if ($Profile) { $exportArguments += @("--profile", $Profile) }
+        & (Join-Path $paths.Root ".venv\Scripts\python.exe") @exportArguments
         if ($LASTEXITCODE -ne 0) { throw "Failed to recover runtime metadata for the owned stack." }
         $state = [ordered]@{
             schema_version = "2.0"; session_id = $sessionId; stack_name = [string]$stack.StackName
@@ -94,7 +96,7 @@ if ($null -eq $state) {
             created_by_review = $false; smoke = "PENDING"; warmup = "PENDING"; processes = @()
         }
         Save-State $state
-        $recoveredExpiry = [DateTimeOffset]::Parse([string]$state.expires_at)
+        $recoveredExpiry = [DateTimeOffset]$state.expires_at
         if ([string]$stack.StackStatus -ne "CREATE_COMPLETE" -or $recoveredExpiry -lt [DateTimeOffset]::UtcNow.AddMinutes(30)) {
             Write-Warning "Discovered session is not presentation-healthy; cleaning it before deployment."
             & (Join-Path $PSScriptRoot "stop.ps1") -Profile $Profile -Region $Region -AwsCliPath $aws.AwsCli
@@ -133,7 +135,10 @@ try {
     }
     $state.expires_at = $runtime.expires_at
     Save-State $state
-    $expires = [DateTimeOffset]::Parse([string]$runtime.expires_at)
+    # PowerShell 7 deserializes ISO JSON timestamps to DateTime. Casting that
+    # value directly preserves its UTC Kind; converting to string first drops
+    # the trailing Z and incorrectly reinterprets it in the local timezone.
+    $expires = [DateTimeOffset]$runtime.expires_at
     if ($expires -lt [DateTimeOffset]::UtcNow.AddMinutes(30)) {
         throw "Owned session is too close to expiry for a safe presentation. Run STOP and START again."
     }
@@ -143,9 +148,13 @@ try {
     $state.smoke = "PASS"; Save-State $state
 
     if ($state.warmup -ne "PASS") {
-        & (Join-Path $paths.Root "aws\scripts\provision_simulators.ps1") -SessionId $state.session_id -Count $Devices -Region $Region -Profile $Profile
+        & powershell.exe -NoProfile -ExecutionPolicy Bypass -File `
+            (Join-Path $paths.Root "aws\scripts\provision_simulators.ps1") `
+            -SessionId $state.session_id -Count $Devices -Region $Region -Profile $Profile
         if ($LASTEXITCODE -ne 0) { throw "IoT simulator provisioning failed." }
-        & (Join-Path $paths.Root "aws\scripts\run_aws_scenario.ps1") -SessionId $state.session_id -Scenario distributed -Devices $Devices
+        & powershell.exe -NoProfile -ExecutionPolicy Bypass -File `
+            (Join-Path $paths.Root "aws\scripts\run_aws_scenario.ps1") `
+            -SessionId $state.session_id -Scenario distributed -Devices $Devices
         if ($LASTEXITCODE -ne 0) { throw "AWS distributed scenario process failed." }
         & (Join-Path $paths.Root ".venv\Scripts\python.exe") aws/scripts/verify_warmup.py --config $state.runtime_config --minimum-devices 4 --timeout-seconds 120
         if ($LASTEXITCODE -ne 0) { throw "AWS authoritative warm-up verification failed." }
@@ -163,14 +172,14 @@ try {
         if ($LASTEXITCODE -ne 0) { throw "Android debug APK build failed." }
     }
     finally { Pop-Location }
-    $devices = @(Get-AuthorizedAdbDevices)
+    $adbDevices = @(Get-AuthorizedAdbDevices)
     $androidStatus = "NOT CONNECTED - APK READY"
-    if ($devices.Count -eq 1) {
+    if ($adbDevices.Count -eq 1) {
         $apk = Join-Path $paths.Root "android\app\build\outputs\apk\debug\app-debug.apk"
-        Invoke-NativeCommandResult -FilePath (Get-Command adb).Source -ArgumentList @("-s", $devices[0], "install", "-r", $apk) | Out-Null
-        $androidStatus = "CONNECTED / APK INSTALLED ($($devices[0]))"
+        Invoke-NativeCommandResult -FilePath (Get-Command adb).Source -ArgumentList @("-s", $adbDevices[0], "install", "-r", $apk) | Out-Null
+        $androidStatus = "CONNECTED / APK INSTALLED ($($adbDevices[0]))"
     }
-    elseif ($devices.Count -gt 1) { $androidStatus = "MULTIPLE DEVICES - MANUAL SELECTION: $($devices -join ', ')" }
+    elseif ($adbDevices.Count -gt 1) { $androidStatus = "MULTIPLE DEVICES - MANUAL SELECTION: $($adbDevices -join ', ')" }
 
     $state.status = "READY"; Save-State $state
     Write-Host "========================================" -ForegroundColor Green
@@ -187,7 +196,8 @@ try {
 catch {
     $message = $_.Exception.Message
     Write-Host "START FAILED: $message" -ForegroundColor Red
-    if ($state.created_by_review) {
+    $ownershipPath = Join-Path (Split-Path -Parent ([string]$state.runtime_config)) "ownership.json"
+    if ($state.created_by_review -and (Test-Path -LiteralPath $ownershipPath)) {
         Write-Warning "START failed after deployment; attempting exact-session teardown."
         try { & (Join-Path $PSScriptRoot "stop.ps1") -Profile $Profile -Region $Region -AwsCliPath $aws.AwsCli }
         catch { Write-Warning "Automatic teardown was incomplete: $($_.Exception.Message)" }

@@ -1,6 +1,6 @@
 # QuakeMesh V2 requirements traceability
 
-Status reflects evidence generated on 2026-10-06. “Verified locally” never implies Android, AWS, or live FCM verification.
+Status reflects evidence generated through 2026-10-08. “Verified locally” never implies Android, AWS, or live FCM verification; live AWS rows say so explicitly.
 
 | Requirement | Implementation | Evidence | Status |
 |---|---|---|---|
@@ -12,10 +12,10 @@ Status reflects evidence generated on 2026-10-06. “Verified locally” never i
 | V2-FR-006 stage telemetry | scenario service + detector stages | negative-stage, sequence, SSE-resume tests | VERIFIED locally |
 | V2-FR-007 local control API | FastAPI V2 envelope/endpoints | API integration and browser tests | VERIFIED locally |
 | V2-FR-008 local parity reads | typed local endpoints | API surface integration test | VERIFIED locally |
-| V2-FR-009 dashboard | React/TypeScript/Vite modules + runtime Local/AWS adapter and capability states | unit, build, local E2E, responsive screenshots | VERIFIED locally; live AWS data not verified |
+| V2-FR-009 dashboard | React/TypeScript/Vite modules + runtime Local/AWS adapter and capability states | unit, build, local E2E, responsive screenshots; live STATUS health/device/event/alert reads | VERIFIED locally; live AWS reads verified through harness, browser ACK interaction pending |
 | V2-FR-010 Android V2 | typed V2 client, observable monitoring state, professional status UI, local alert polling, alert-ID FCM parsing, Android ACK | Gradle debug compile/APK assembly/lint | PARTIALLY VERIFIED; emulator, physical device, traffic, and FCM not run |
-| V2-FR-011 AWS session ownership | session stack name, tags, expiry metadata, scoped names/topics, destroy policies, one-time Scheduler cleanup with ownership refusal checks | source tests + CDK synth | IMPLEMENTED; automatic execution not live-verified |
-| V2-FR-012 AWS teardown/verifier | pre-deployment ownership metadata, account/tag guard, exact IoT/SNS cleanup, exact stack destroy, concrete pre-destroy resource inventory, tag/Thing/certificate/stack verification | source tests + preparation audit | IMPLEMENTED; live CLEAN report not verified |
+| V2-FR-011 AWS session ownership | session stack name, tags, expiry metadata, scoped names/topics, destroy policies, one-time Scheduler cleanup with ownership refusal checks | source tests + CDK synth + two distinct live sessions + idempotent reuse | VERIFIED live for manual lifecycle; automatic expiry execution pending |
+| V2-FR-012 AWS teardown/verifier | pre-deployment ownership metadata, account/tag guard, exact IoT/SNS cleanup, exact stack destroy, concrete pre-destroy resource inventory, tag/Thing/certificate/stack verification | source tests + two live STOP/CLEAN reports + already-stopped no-op | VERIFIED live for manual teardown |
 | V2-FR-013 local evidence export | ScenarioControlService export | privacy/export test + browser E2E | VERIFIED locally |
 | V2-FR-014 local reset | transactional scenario-only reset | active refusal/physical preservation tests | VERIFIED locally |
 | V2-NFR-001 truthful status | TARGETED alerts, gate/status vocabulary | API, service, E2E assertions | VERIFIED locally |
@@ -25,6 +25,6 @@ Status reflects evidence generated on 2026-10-06. “Verified locally” never i
 | V2-NFR-005 accessibility/responsiveness | semantic navigation/tables/status/focus | automated viewport/overflow checks | PARTIALLY VERIFIED; formal accessibility audit not run |
 | V2-NFR-006 performance | bounded lists, 5 s recovery poll, SSE | functional only | NOT LOAD-VERIFIED |
 | V2-NFR-007 security/privacy | loopback controls, safe reads/exports, secret scan | schema/privacy/secret tests | VERIFIED locally for this scope |
-| V2-NFR-008 portability | clickable review wrappers, explicit AWS CLI v2 resolution, path-safe CDK virtualenv invocation, independent dashboard copies | preparation + CDK synth from spaced Windows path | VERIFIED for preparation; live lifecycle pending |
+| V2-NFR-008 portability | clickable review wrappers, explicit AWS CLI v2 resolution, path-safe CDK virtualenv invocation, independent dashboard copies | preparation, synth, and complete live lifecycle from spaced Windows path | VERIFIED live on current Windows host |
 | V2-NFR-009 maintainability | feature modules, contracts, targeted professional lint | typecheck/lint/tests | VERIFIED locally |
-| V2-NFR-010 cloud cost control | no cloud action in phase | none | NOT VERIFIED |
+| V2-NFR-010 cloud cost control | exact ownership, 180-minute expiry guard, manual STOP, inventory verifier | two live CLEAN reports; final zero-stack/zero-port status | VERIFIED for manual cleanup; expiry execution and measured cost pending |

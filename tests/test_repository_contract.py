@@ -39,6 +39,26 @@ def test_aws_v2_api_and_provenance_contracts_are_present():
     assert "X-QuakeMesh-Run-Id" in api
     assert 'provenance_type="scenario"' in ingress
     assert 'provenance_type:str="physical"' in ingress
+    assert "error_type=type(error).__name__" in api
+    assert "error_message=str(error)" in api
+
+
+def test_aws_iot_rule_uses_valid_alias_and_no_reserved_concurrency():
+    stack = (ROOT / "aws/infrastructure/stack.py").read_text()
+    ingress = (ROOT / "aws/lambdas/ingress.py").read_text()
+    assert "topic() AS topic_path" in stack
+    assert "topic() AS _topic" not in stack
+    assert "reserved_concurrent_executions" not in stack
+    assert 'event.get("topic_path")' in ingress
+    assert 'k not in {"topic_path","_topic"}' in ingress
+
+
+def test_lambda_asset_preserves_layer_path_and_bootstraps_src_imports():
+    stack = (ROOT / "aws/infrastructure/stack.py").read_text()
+    api = (ROOT / "aws/lambdas/api.py").read_text()
+    assert '"PYTHONPATH"' not in stack
+    assert '".pytest-tmp*"' in stack
+    assert api.index("from .common import") < api.index("from quakemesh_core.geo import")
 
 def test_no_v1_vpc_compute_database_constructs():
     s=(ROOT/"aws/infrastructure/stack.py").read_text().lower()
@@ -77,3 +97,37 @@ def test_dashboard_launcher_uses_named_parameter_splatting():
     assert "@childParameters" in helper
     assert "'-Port'" not in helper
     assert "[int]$Port" in smoke and "8080" in smoke
+
+
+def test_review_start_preserves_ordered_state_process_records():
+    start = (ROOT / "scripts" / "review" / "start.ps1").read_text(encoding="utf-8")
+    assert "[System.Collections.IDictionary]$State" in start
+    assert "[System.Collections.IDictionary]$Value" in start
+    assert "Test-Path -LiteralPath $ownershipPath" in start
+    assert "DateTimeOffset]::Parse([string]" not in start
+    assert "$expires = [DateTimeOffset]$runtime.expires_at" in start
+    assert start.count("powershell.exe -NoProfile -ExecutionPolicy Bypass -File") >= 2
+
+
+def test_teardown_removes_exact_inventory_log_groups_after_stack_destroy():
+    destroy = (ROOT / "aws" / "scripts" / "destroy.ps1").read_text(encoding="utf-8")
+    assert 'Where-Object { $_.type -eq "AWS::Logs::LogGroup"' in destroy
+    assert '"logs", "delete-log-group", "--log-group-name"' in destroy
+
+
+def test_adb_detection_is_optional_and_selects_one_executable():
+    common = (ROOT / "scripts" / "review" / "common.ps1").read_text(encoding="utf-8")
+    start = (ROOT / "scripts" / "review" / "start.ps1").read_text(encoding="utf-8")
+    assert "Get-Command adb -All" in common
+    assert "Test-TcpPort -Port 5037" in common
+    assert "ADB is unavailable; continuing with APK READY" in common
+    # PowerShell variables are case-insensitive: do not collide with the
+    # typed [int]$Devices scenario-count parameter in start.ps1.
+    assert "$adbDevices = @(Get-AuthorizedAdbDevices)" in start
+    assert "$devices = @(Get-AuthorizedAdbDevices)" not in start
+
+
+def test_validation_uses_workspace_owned_pytest_temp_directory():
+    validate = (ROOT / "scripts" / "validate.ps1").read_text(encoding="utf-8")
+    assert '"artifacts\\pytest-validation"' in validate
+    assert "--basetemp $PytestBaseTemp" in validate

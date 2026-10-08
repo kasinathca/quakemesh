@@ -129,6 +129,8 @@ class QuakeMeshStack(Stack):
                 "*.zip",
                 "__pycache__",
                 ".pytest_cache",
+                ".pytest-tmp*",
+                ".ruff_cache",
                 "dashboard/node_modules",
                 "dashboard/dist",
             ],
@@ -165,7 +167,6 @@ class QuakeMeshStack(Stack):
             timeout: int = 15,
             memory: int = 256,
             layers: tuple[lambda_.ILayerVersion, ...] = (),
-            reserved: int | None = None,
         ) -> lambda_.Function:
             fn = lambda_.Function(
                 self,
@@ -179,7 +180,6 @@ class QuakeMeshStack(Stack):
                 environment=common_env,
                 layers=list(layers),
                 tracing=lambda_.Tracing.ACTIVE,
-                reserved_concurrent_executions=reserved,
             )
             logs.LogGroup(
                 self,
@@ -194,9 +194,9 @@ class QuakeMeshStack(Stack):
         ingress = function("IngressFn", "aws.lambdas.ingress.handler", 20, 384, (h3_layer,))
         api_fn = function("ApiFn", "aws.lambdas.api.handler", 20, 384, (h3_layer,))
         correlator = function(
-            "CorrelatorFn", "aws.lambdas.correlator.handler", 30, 512, (h3_layer,), 1
+            "CorrelatorFn", "aws.lambdas.correlator.handler", 30, 512, (h3_layer,)
         )
-        dispatcher = function("DispatcherFn", "aws.lambdas.dispatcher.handler", 30, 384, (), 1)
+        dispatcher = function("DispatcherFn", "aws.lambdas.dispatcher.handler", 30, 384)
         resolver = function("ResolverFn", "aws.lambdas.resolver.handler", 20, 256)
         cleanup = function("CleanupFn", "aws.lambdas.cleanup.handler", 60, 256)
         cleanup.add_environment("QM_STACK_NAME", self.stack_name)
@@ -317,7 +317,7 @@ class QuakeMeshStack(Stack):
                 f"{kind.title()}Rule",
                 topic_rule_payload=iot.CfnTopicRule.TopicRulePayloadProperty(
                     sql=(
-                        f"SELECT *, topic() AS _topic FROM "
+                        f"SELECT *, topic() AS topic_path FROM "
                         f"'{topic_root}/+/{kind}'"
                     ),
                     aws_iot_sql_version="2016-03-23",

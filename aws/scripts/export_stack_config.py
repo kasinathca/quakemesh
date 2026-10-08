@@ -13,12 +13,14 @@ def main() -> None:
     parser.add_argument("--stack-name", required=True)
     parser.add_argument("--session-id", required=True)
     parser.add_argument("--region", default="ap-south-1")
+    parser.add_argument("--profile")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
-    cloudformation = boto3.client("cloudformation", region_name=args.region)
-    gateway = boto3.client("apigateway", region_name=args.region)
-    iot = boto3.client("iot", region_name=args.region)
-    identity = boto3.client("sts", region_name=args.region).get_caller_identity()
+    session = boto3.Session(profile_name=args.profile) if args.profile else boto3.Session()
+    cloudformation = session.client("cloudformation", region_name=args.region)
+    gateway = session.client("apigateway", region_name=args.region)
+    iot = session.client("iot", region_name=args.region)
+    identity = session.client("sts", region_name=args.region).get_caller_identity()
     stack = cloudformation.describe_stacks(StackName=args.stack_name)["Stacks"][0]
     outputs = {item["OutputKey"]: item["OutputValue"] for item in stack.get("Outputs", [])}
     if outputs.get("SessionId") != args.session_id:

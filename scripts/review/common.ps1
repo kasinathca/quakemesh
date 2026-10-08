@@ -298,8 +298,18 @@ function Restore-AndroidReviewConfiguration {
 }
 
 function Get-AuthorizedAdbDevices {
-    $adb = Get-Command adb -ErrorAction SilentlyContinue
+    $adb = @(Get-Command adb -All -ErrorAction SilentlyContinue) | Select-Object -First 1
     if (!$adb) { return @() }
-    $result = Invoke-NativeCommandResult -FilePath $adb.Source -ArgumentList @("devices", "-l") -Quiet
-    return @($result.Output | Where-Object { $_ -match '^\S+\s+device(?:\s|$)' } | ForEach-Object { ($_ -split '\s+')[0] })
+    # Do not start or mutate an ADB daemon as part of an AWS review. A phone is
+    # optional; inspect devices only when a user-started daemon already exists.
+    if (!(Test-TcpPort -Port 5037)) { return @() }
+    try {
+        $output = @(& ([string]$adb.Source) devices -l 2>&1)
+        if ($LASTEXITCODE -ne 0) { throw "adb devices exited with code $LASTEXITCODE" }
+    }
+    catch {
+        Write-Warning "ADB is unavailable; continuing with APK READY and no connected phone. $($_.Exception.Message)"
+        return @()
+    }
+    return @($output | Where-Object { $_ -match '^\S+\s+device(?:\s|$)' } | ForEach-Object { ($_ -split '\s+')[0] })
 }

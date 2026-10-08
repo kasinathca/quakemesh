@@ -2,6 +2,7 @@ $ErrorActionPreference = "Stop"
 $Root = Split-Path -Parent $PSScriptRoot
 $Python = Join-Path $Root ".venv\Scripts\python.exe"
 $Dashboard = Join-Path $Root "dashboard"
+$PytestBaseTemp = Join-Path $Root "artifacts\pytest-validation"
 $script:Passed = 0
 $script:Skipped = 0
 
@@ -33,7 +34,7 @@ $env:PYTHONPATH = "$Root\src;$Root"
 Set-Location $Root
 
 Invoke-Gate "Python compilation" { & $Python scripts/release_audit.py --compile-only }
-Invoke-Gate "pytest" { & $Python -m pytest -q }
+Invoke-Gate "pytest" { & $Python -m pytest -q --basetemp $PytestBaseTemp }
 Invoke-Gate "Ruff repository critical rules" {
     & $Python -m ruff check src local_runtime simulator aws scripts tests
 }

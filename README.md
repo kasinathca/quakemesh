@@ -5,7 +5,7 @@ Academic cloud-computing project · AWS serverless backend · H3 spatial indexin
 
 > **Important scope statement:** QuakeMesh is an experimental software prototype. A “confirmed event” means the configured cloud corroboration rules were satisfied. It is **not** an official earthquake declaration, does not estimate magnitude or epicentre, and is not validated for life-safety use.
 
-> **V2 engineering status:** the local control plane and React dashboard are locally verified. Android V2 networking/UI/ACK builds and lints, but emulator/device/FCM behavior is unverified. The session-scoped AWS V2 API/Lambda/DynamoDB/IoT/CloudWatch foundation is implemented, tested, and locally synthesized, but is not live-deployed because this host has no configured AWS CLI/account evidence. See [`docs/v2/QM-V2-COMPLETION-REPORT.md`](docs/v2/QM-V2-COMPLETION-REPORT.md) and [`docs/v2/QM-V2-AWS-IMPLEMENTATION.md`](docs/v2/QM-V2-AWS-IMPLEMENTATION.md).
+> **V2 engineering status:** the local control plane and React dashboard are locally verified. Android V2 networking/UI/ACK builds and lints, but emulator/device/FCM behavior is unverified. The session-scoped AWS V2 API/Lambda/DynamoDB/IoT/CloudWatch foundation completed two real 25-device START→READY→STOP/CLEAN cycles in account `101541767123`, region `ap-south-1`, including idempotent START reuse and zero-resource final status. Automatic expiry execution remains separately unverified. See [`docs/v2/QM-V2-COMPLETION-REPORT.md`](docs/v2/QM-V2-COMPLETION-REPORT.md) and [`docs/v2/QM-V2-AWS-IMPLEMENTATION.md`](docs/v2/QM-V2-AWS-IMPLEMENTATION.md).
 
 ## What is implemented
 
@@ -296,7 +296,7 @@ The Gradle wrapper is restored. On 2026-10-08 the current Windows host successfu
 
 ## AWS resources
 
-The active AWS source now defines the session-scoped V2 stack. Live deployment remains separately unverified; the older V1 behavior is retained only in Git history and historical validation text.
+The active AWS source now defines the session-scoped V2 stack. Its manual live lifecycle is verified; the older V1 behavior is retained only in Git history and historical validation text.
 
 The CDK stack creates only managed/serverless services:
 
