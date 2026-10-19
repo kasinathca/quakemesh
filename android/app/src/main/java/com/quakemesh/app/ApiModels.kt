@@ -34,6 +34,10 @@ data class AlertRecord(
     val createdAtMs: Long,
     val acknowledgedAtMs: Long?,
     val acknowledgementSource: String?,
+    val provenanceType: String? = null,
+    val warningAreaH3: List<String> = emptyList(),
+    val authoritativeRecord: Boolean = true,
+    val controlledTest: Boolean = false,
 )
 
 data class AcknowledgementReceipt(
@@ -92,6 +96,12 @@ internal object ApiJson {
         createdAtMs = value.optLong("created_at_ms", value.optLong("received_at_ms", 0L)),
         acknowledgedAtMs = value.optLongOrNull("acknowledged_at_ms"),
         acknowledgementSource = value.optString("acknowledgement_source").ifBlank { null },
+        provenanceType = value.optString("provenance_type").ifBlank { null },
+        warningAreaH3 = value.optJSONArray("warning_area_h3")?.let { array ->
+            buildList { for (index in 0 until array.length()) add(array.optString(index)) }
+        } ?: emptyList(),
+        authoritativeRecord = value.optBoolean("authoritative_record", true),
+        controlledTest = value.optBoolean("controlled_test", false),
     )
 
     private fun JSONObject.optLongOrNull(key: String): Long? =

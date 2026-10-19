@@ -10,7 +10,7 @@ Debug emulator builds default to `http://10.0.2.2:8000`. Debug network policy pe
 
 The foreground service publishes monitoring, sensor availability, coarse location availability (not coordinates), recurring heartbeat result, and local motion state. Alert polling supports local FastAPI. FCM parsing uses `alert_id` as the primary deduplication identity, persists the latest alert, and retains a legacy event fallback only for older messages. ACK calls `POST /v1/alerts/{alert_id}/ack` with Android source and physical device identity; notification dismissal does not imply ACK.
 
-Verified on the current Windows host: debug Kotlin/Java compilation, APK assembly, and Android lint. Unit-test task currently has no source tests. Emulator, physical-device sensors/location, actual local traffic, process recreation, TalkBack, and FCM delivery are not yet verified.
+Verified on the current Windows host: 12 JVM tests, debug Kotlin/Java compilation, Firebase-enabled APK assembly, Android lint, installation and launch on Motorola device `ZD222HDG42`, physical heartbeat/H3 registration, physical motion evidence, notification navigation, foreground/background controlled previews, duplicate suppression, distinct warning/demo channels and bundled tones, and one uniquely labeled controlled FCM receipt. Controlled previews created no authoritative ACK records. Android 15 did not display an automatic heads-up overlay during the observed test, and QuakeMesh intentionally does not request full-screen intent. Process recreation, TalkBack, broad device coverage, and authoritative handset ACK remain unverified.
 
 ## Target evolution
 
@@ -22,4 +22,4 @@ Layouts support compact portrait, handset landscape, and a larger window. Text s
 
 The implemented single-screen status surface is the first final-architecture checkpoint. The planned destination-level navigation, durable multi-alert history, footprint summary, responsive large-window layouts, and formal accessibility validation remain future increments rather than being falsely presented as complete.
 
-Live FCM delivery remains `NOT VERIFIED` until a real Firebase project, permitted emulator/device, and receipt evidence exist.
+Controlled live FCM receipt is verified for the named physical device and session documented in `QM-V2-AWS-PIPELINE-REPAIR.md`. This does not prove delivery reliability across devices or operating conditions, and the controlled message had no authoritative alert record, so ACK was correctly not generated.

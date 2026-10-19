@@ -7,6 +7,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <application android:allowBackup="false" android:label="QuakeMesh" android:theme="@style/AppTheme" android:usesCleartextTraffic="false">
+        <activity android:name=".WarningActivity" android:exported="false" android:excludeFromRecents="true" android:showWhenLocked="true" />
         <activity android:name=".MainActivity" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" />

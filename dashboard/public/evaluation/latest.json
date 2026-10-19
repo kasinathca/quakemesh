@@ -1,0 +1,360 @@
+{
+  "confusion_matrix": {
+    "FN": 0,
+    "FP": 0,
+    "TN": 24,
+    "TP": 24
+  },
+  "disclaimer": "Synthetic scenario results evaluate this software implementation; they are not real-world earthquake-detection accuracy.",
+  "generated_at": "2026-10-19T14:02:03.126508+00:00",
+  "latency_ms": {
+    "alert_target_count": 24,
+    "alert_target_mean": 513.75,
+    "alert_target_mean_ci95": [
+      410.375,
+      637.2916666666666
+    ],
+    "alert_target_median": 469.5,
+    "confirmation_count": 24,
+    "confirmation_mean": 513.75,
+    "confirmation_mean_ci95": [
+      405.625,
+      629.125
+    ],
+    "confirmation_median": 469.5
+  },
+  "metrics": {
+    "accuracy": 1.0,
+    "accuracy_ci95": [
+      0.9258998703338824,
+      1.0
+    ],
+    "f1": 1.0,
+    "f1_ci95": [
+      0.9258998703338824,
+      1.0
+    ],
+    "false_negative_rate": 0.0,
+    "false_negative_rate_ci95": [
+      0.0,
+      0.13797620467498017
+    ],
+    "false_positive_rate": 0.0,
+    "false_positive_rate_ci95": [
+      0.0,
+      0.13797620467498017
+    ],
+    "precision": 1.0,
+    "precision_ci95": [
+      0.8620237953250198,
+      1.0
+    ],
+    "recall": 1.0,
+    "recall_ci95": [
+      0.8620237953250198,
+      1.0
+    ],
+    "specificity": 1.0,
+    "specificity_ci95": [
+      0.8620237953250198,
+      1.0
+    ]
+  },
+  "notification_receipt": {
+    "observed": false,
+    "reason": "Offline local runtime records targets but has no FCM receipt signal."
+  },
+  "reproducibility": {
+    "detector": {
+      "event_merge_window_ms": 20000,
+      "event_resolve_after_ms": 30000,
+      "evidence_ttl_seconds": 600,
+      "evidence_window_ms": 8000,
+      "h3_correlation_resolution": 7,
+      "h3_device_resolution": 9,
+      "max_clock_skew_ms": 120000,
+      "max_cluster_grid_distance": 6,
+      "min_devices": 4,
+      "min_distinct_cells": 3,
+      "motion_peak_threshold": 1.8,
+      "motion_rms_threshold": 0.75,
+      "warning_ring_k": 1
+    },
+    "experiment": {
+      "base_seed": 20261019,
+      "center_lat": 12.9716,
+      "center_lon": 77.5946,
+      "center_variation_deg": 0.018,
+      "degraded_loss_fractions": [
+        0.0,
+        0.15,
+        0.3,
+        0.45
+      ],
+      "device_counts": [
+        12,
+        25
+      ],
+      "jitter_ms_values": [
+        0,
+        150,
+        600,
+        1200
+      ],
+      "propagation_ms_values": [
+        40,
+        70,
+        120
+      ],
+      "spacing_scales": [
+        0.8,
+        1.0,
+        1.2
+      ],
+      "trials_per_scenario": 12
+    },
+    "geo_index": "h3-py (real H3)"
+  },
+  "result_kind": "OFFLINE_SYNTHETIC_SIMULATION_EVALUATION",
+  "robustness": [
+    {
+      "accuracy": 1.0,
+      "accuracy_ci95": [
+        0.4385029682449546,
+        1.0
+      ],
+      "correct": 3,
+      "detection_rate": 1.0,
+      "detections": 3,
+      "jitter_ms": 0,
+      "packet_loss_fraction": 0.0,
+      "scenario": "degraded",
+      "trials": 3
+    },
+    {
+      "accuracy": 1.0,
+      "accuracy_ci95": [
+        0.4385029682449546,
+        1.0
+      ],
+      "correct": 3,
+      "detection_rate": 1.0,
+      "detections": 3,
+      "jitter_ms": 150,
+      "packet_loss_fraction": 0.15,
+      "scenario": "degraded",
+      "trials": 3
+    },
+    {
+      "accuracy": 1.0,
+      "accuracy_ci95": [
+        0.4385029682449546,
+        1.0
+      ],
+      "correct": 3,
+      "detection_rate": 1.0,
+      "detections": 3,
+      "jitter_ms": 600,
+      "packet_loss_fraction": 0.3,
+      "scenario": "degraded",
+      "trials": 3
+    },
+    {
+      "accuracy": 1.0,
+      "accuracy_ci95": [
+        0.4385029682449546,
+        1.0
+      ],
+      "correct": 3,
+      "detection_rate": 1.0,
+      "detections": 3,
+      "jitter_ms": 1200,
+      "packet_loss_fraction": 0.45,
+      "scenario": "degraded",
+      "trials": 3
+    },
+    {
+      "accuracy": 1.0,
+      "accuracy_ci95": [
+        0.4385029682449546,
+        1.0
+      ],
+      "correct": 3,
+      "detection_rate": 1.0,
+      "detections": 3,
+      "jitter_ms": 0,
+      "packet_loss_fraction": 0.0,
+      "scenario": "distributed",
+      "trials": 3
+    },
+    {
+      "accuracy": 1.0,
+      "accuracy_ci95": [
+        0.4385029682449546,
+        1.0
+      ],
+      "correct": 3,
+      "detection_rate": 1.0,
+      "detections": 3,
+      "jitter_ms": 150,
+      "packet_loss_fraction": 0.0,
+      "scenario": "distributed",
+      "trials": 3
+    },
+    {
+      "accuracy": 1.0,
+      "accuracy_ci95": [
+        0.4385029682449546,
+        1.0
+      ],
+      "correct": 3,
+      "detection_rate": 1.0,
+      "detections": 3,
+      "jitter_ms": 600,
+      "packet_loss_fraction": 0.0,
+      "scenario": "distributed",
+      "trials": 3
+    },
+    {
+      "accuracy": 1.0,
+      "accuracy_ci95": [
+        0.4385029682449546,
+        1.0
+      ],
+      "correct": 3,
+      "detection_rate": 1.0,
+      "detections": 3,
+      "jitter_ms": 1200,
+      "packet_loss_fraction": 0.0,
+      "scenario": "distributed",
+      "trials": 3
+    },
+    {
+      "accuracy": 1.0,
+      "accuracy_ci95": [
+        0.4385029682449546,
+        1.0
+      ],
+      "correct": 3,
+      "detection_rate": 0.0,
+      "detections": 0,
+      "jitter_ms": 0,
+      "packet_loss_fraction": 0.0,
+      "scenario": "isolated",
+      "trials": 3
+    },
+    {
+      "accuracy": 1.0,
+      "accuracy_ci95": [
+        0.4385029682449546,
+        1.0
+      ],
+      "correct": 3,
+      "detection_rate": 0.0,
+      "detections": 0,
+      "jitter_ms": 150,
+      "packet_loss_fraction": 0.0,
+      "scenario": "isolated",
+      "trials": 3
+    },
+    {
+      "accuracy": 1.0,
+      "accuracy_ci95": [
+        0.4385029682449546,
+        1.0
+      ],
+      "correct": 3,
+      "detection_rate": 0.0,
+      "detections": 0,
+      "jitter_ms": 600,
+      "packet_loss_fraction": 0.0,
+      "scenario": "isolated",
+      "trials": 3
+    },
+    {
+      "accuracy": 1.0,
+      "accuracy_ci95": [
+        0.4385029682449546,
+        1.0
+      ],
+      "correct": 3,
+      "detection_rate": 0.0,
+      "detections": 0,
+      "jitter_ms": 1200,
+      "packet_loss_fraction": 0.0,
+      "scenario": "isolated",
+      "trials": 3
+    },
+    {
+      "accuracy": 1.0,
+      "accuracy_ci95": [
+        0.4385029682449546,
+        1.0
+      ],
+      "correct": 3,
+      "detection_rate": 0.0,
+      "detections": 0,
+      "jitter_ms": 0,
+      "packet_loss_fraction": 0.0,
+      "scenario": "same-cell",
+      "trials": 3
+    },
+    {
+      "accuracy": 1.0,
+      "accuracy_ci95": [
+        0.4385029682449546,
+        1.0
+      ],
+      "correct": 3,
+      "detection_rate": 0.0,
+      "detections": 0,
+      "jitter_ms": 150,
+      "packet_loss_fraction": 0.0,
+      "scenario": "same-cell",
+      "trials": 3
+    },
+    {
+      "accuracy": 1.0,
+      "accuracy_ci95": [
+        0.4385029682449546,
+        1.0
+      ],
+      "correct": 3,
+      "detection_rate": 0.0,
+      "detections": 0,
+      "jitter_ms": 600,
+      "packet_loss_fraction": 0.0,
+      "scenario": "same-cell",
+      "trials": 3
+    },
+    {
+      "accuracy": 1.0,
+      "accuracy_ci95": [
+        0.4385029682449546,
+        1.0
+      ],
+      "correct": 3,
+      "detection_rate": 0.0,
+      "detections": 0,
+      "jitter_ms": 1200,
+      "packet_loss_fraction": 0.0,
+      "scenario": "same-cell",
+      "trials": 3
+    }
+  ],
+  "schema_version": "1.0",
+  "transport": {
+    "attempted_triggers": 348,
+    "delivered_triggers": 311,
+    "delivery_success_ci95": [
+      0.8568854538169672,
+      0.9218743913655647
+    ],
+    "delivery_success_ratio": 0.8936781609195402
+  },
+  "trial_counts": {
+    "completed": 48,
+    "failed": 0,
+    "requested": 48
+  }
+}

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import time
-from boto3.dynamodb.conditions import Key
+from boto3.dynamodb.conditions import Attr
 from .common import boto3, env, log, stream_image
 
 iot = boto3.client("iot")
@@ -20,25 +20,28 @@ def iot_data():
 
 
 def targets(cells: list[str], seen_after: int, provenance_type: str, scenario_run_id: str | None) -> list[dict]:
+    """Return authoritative recipients without depending on a just-written GSI.
+
+    Event dispatch follows device/evidence writes closely enough that the
+    cell-lastseen GSI can still be stale.  The review fleet is deliberately small,
+    so a strongly consistent, paginated base-table scan is the correctness-first
+    choice (and matches the correlator's event lookup policy).
+    """
     table = ddb.Table(env("QM_DEVICE_TABLE"))
     found: dict[str, dict] = {}
-    for cell in set(cells):
-        kwargs = {
-            "IndexName": "cell-lastseen-index",
-            "KeyConditionExpression": Key("correlation_cell").eq(cell) & Key("last_seen_ms").gte(seen_after),
-        }
-        while True:
-            response = table.query(**kwargs)
-            for row in response.get("Items", []):
-                if row.get("provenance_type") != provenance_type:
-                    continue
-                if row.get("scenario_run_id") != scenario_run_id:
-                    continue
+    wanted = set(cells)
+    provenance_filter = Attr("provenance_type").eq(provenance_type)
+    run_filter = Attr("scenario_run_id").eq(scenario_run_id) if scenario_run_id else Attr("scenario_run_id").not_exists()
+    kwargs = {"ConsistentRead": True, "FilterExpression": Attr("last_seen_ms").gte(seen_after) & provenance_filter & run_filter}
+    while True:
+        response = table.scan(**kwargs)
+        for row in response.get("Items", []):
+            if row.get("correlation_cell") in wanted:
                 found[str(row["device_id"])] = row
-            last_key = response.get("LastEvaluatedKey")
-            if not last_key:
-                break
-            kwargs["ExclusiveStartKey"] = last_key
+        last_key = response.get("LastEvaluatedKey")
+        if not last_key:
+            break
+        kwargs["ExclusiveStartKey"] = last_key
     return list(found.values())
 
 
@@ -133,6 +136,7 @@ def send_fcm(endpoint_arn: str, event: dict, alert_id: str, device_id: str, crea
 
 def handler(event, context):
     sent: list[str] = []
+    log("DISPATCHER_BATCH_RECEIVED", record_count=len(event.get("Records", [])))
     for record in event.get("Records", []):
         if record.get("eventName") not in {"INSERT", "MODIFY"}:
             continue
@@ -146,7 +150,17 @@ def handler(event, context):
         now = int(time.time() * 1000)
         provenance_type = str(event_item.get("provenance_type", "physical"))
         scenario_run_id = event_item.get("scenario_run_id")
-        for device in targets(cells, now - 120_000, provenance_type, scenario_run_id):
+        recipients = targets(cells, now - 120_000, provenance_type, scenario_run_id)
+        log(
+            "ALERT_TARGETS_RESOLVED",
+            event_id=event_item.get("event_id"),
+            event_version=event_item.get("version"),
+            provenance_type=provenance_type,
+            scenario_run_id=scenario_run_id,
+            target_cells=len(set(cells)),
+            recipient_count=len(recipients),
+        )
+        for device in recipients:
             device_id = str(device["device_id"])
             version = int(event_item["version"])
             event_id = str(event_item["event_id"])
@@ -173,9 +187,17 @@ def handler(event, context):
                 if device.get("fcm_endpoint_arn"):
                     send_fcm(str(device["fcm_endpoint_arn"]), event_item, alert_id, device_id, now)
                 mark(alert_id, "SENT")
-                log("ALERT_DELIVERY_COMPLETED",event_id=event_id,alert_id=alert_id,device_id=device_id,provenance_type=provenance_type,scenario_run_id=scenario_run_id)
+                log(
+                    "ALERT_DELIVERY_COMPLETED",
+                    event_id=event_id,
+                    alert_id=alert_id,
+                    device_id=device_id,
+                    provenance_type=provenance_type,
+                    scenario_run_id=scenario_run_id,
+                )
                 sent.append(device_id)
             except Exception as exc:
                 mark(alert_id, "FAILED", repr(exc))
                 raise
+    log("DISPATCHER_BATCH_COMPLETED", sent_count=len(sent))
     return {"sent": sent}

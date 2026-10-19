@@ -1,5 +1,6 @@
 import {
   Activity,
+  ChartNoAxesCombined,
   Bell,
   Boxes,
   FlaskConical,
@@ -22,6 +23,7 @@ export type ViewId =
   | "devices"
   | "alerts"
   | "experiments"
+  | "evaluation"
   | "infrastructure"
   | "session";
 
@@ -33,6 +35,7 @@ const navigation: Array<{ id: ViewId; label: string; icon: typeof Gauge }> = [
   { id: "devices", label: "Devices", icon: Smartphone },
   { id: "alerts", label: "Alerts", icon: Bell },
   { id: "experiments", label: "Experiments", icon: Boxes },
+  { id: "evaluation", label: "Evaluation / Metrics", icon: ChartNoAxesCombined },
   { id: "infrastructure", label: "Infrastructure", icon: Server },
   { id: "session", label: "Session", icon: RadioTower },
 ];

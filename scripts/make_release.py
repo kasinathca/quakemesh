@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import shutil
+import subprocess
 import zipfile
 from pathlib import Path
 
@@ -69,7 +70,20 @@ def clean_generated() -> None:
 
 
 def source_files(include_manifest: bool = False) -> list[Path]:
-    files = [p for p in ROOT.rglob("*") if should_include(p)]
+    if (ROOT / ".git").exists():
+        result = subprocess.run(
+            ["git", "ls-files", "--cached", "--others", "--exclude-standard", "-z"],
+            cwd=ROOT,
+            capture_output=True,
+            check=True,
+        )
+        files = [
+            ROOT / relative.decode("utf-8")
+            for relative in result.stdout.split(b"\0")
+            if relative and should_include(ROOT / relative.decode("utf-8"))
+        ]
+    else:
+        files = [p for p in ROOT.rglob("*") if should_include(p)]
     manifest = ROOT / "SOURCE_MANIFEST.txt"
     if not include_manifest:
         files = [p for p in files if p != manifest]

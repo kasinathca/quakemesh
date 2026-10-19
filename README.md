@@ -5,7 +5,7 @@ Academic cloud-computing project · AWS serverless backend · H3 spatial indexin
 
 > **Important scope statement:** QuakeMesh is an experimental software prototype. A “confirmed event” means the configured cloud corroboration rules were satisfied. It is **not** an official earthquake declaration, does not estimate magnitude or epicentre, and is not validated for life-safety use.
 
-> **V2 engineering status:** the local control plane and React dashboard are locally verified. Android V2 networking/UI/ACK builds and lints, but emulator/device/FCM behavior is unverified. The session-scoped AWS V2 API/Lambda/DynamoDB/IoT/CloudWatch foundation completed two real 25-device START→READY→STOP/CLEAN cycles in account `101541767123`, region `ap-south-1`, including idempotent START reuse and zero-resource final status. Automatic expiry execution remains separately unverified. See [`docs/v2/QM-V2-COMPLETION-REPORT.md`](docs/v2/QM-V2-COMPLETION-REPORT.md) and [`docs/v2/QM-V2-AWS-IMPLEMENTATION.md`](docs/v2/QM-V2-AWS-IMPLEMENTATION.md).
+> **V2 engineering status:** the local control plane, real-H3 detector, research evaluation, React dashboard, Android client, and session-scoped AWS pipeline have been verified on the current Windows host. Live session `qm-20261019-112257-b77a` proved IoT ingestion, DynamoDB Streams correlation, one authoritative scenario event, 17 simulator alerts, physical heartbeat/H3 registration, an enabled session-owned SNS endpoint, controlled FCM receipt, and provenance-isolated physical motion evidence. Its final 96-resource inventory audit is `CLEAN`. Android 15 did not show an automatic heads-up overlay, and full-screen intent is intentionally not requested. Automatic expiry did not complete at its scheduled time; guarded manual STOP remains the verified cleanup path. See [`docs/v2/QM-V2-AWS-PIPELINE-REPAIR.md`](docs/v2/QM-V2-AWS-PIPELINE-REPAIR.md) and [`docs/v2/QM-V2-OFFLINE-EVALUATION-AND-ANDROID-WARNINGS.md`](docs/v2/QM-V2-OFFLINE-EVALUATION-AND-ANDROID-WARNINGS.md).
 
 ## What is implemented
 
@@ -15,6 +15,7 @@ This repository contains the verified local V2 system, the Android V2 client fou
 - local FastAPI + SQLite V2 control plane with versioned envelopes, stable errors, request IDs, REST snapshots, and SSE stage telemetry;
 - one authoritative scenario service used by dashboard and PowerShell CLI, with atomic single-run policy and physical/scenario/run provenance isolation;
 - deterministic Python virtual-phone fleet with validated effective parameters, repeatable loss, jitter, and propagation;
+- deterministic 48-trial offline evaluation using the production detector and real H3, with event-level metrics, confidence intervals, CSV/JSON data, and report figures;
 - AWS IoT Core MQTT/mTLS ingestion with Thing-scoped policy;
 - IoT Rules → Lambda ingress;
 - DynamoDB device state, TTL evidence, authoritative event state and alert-delivery records;
@@ -357,7 +358,15 @@ Release validation includes:
 
 A real-H3 integration test is included. If `h3` is unavailable, that one test explicitly skips; after `scripts/setup.ps1` on your PC it should execute rather than skip.
 
-AWS deployment, Firebase delivery and a real Android build/device run are environment/account-dependent validations and are intentionally reported separately instead of being falsely claimed by this repository. See `VALIDATION_REPORT.md` for the release-time evidence and exact boundaries.
+AWS deployment, Firebase delivery, and physical-device behavior remain environment/account-dependent and are reported as separate observations. The controlled live session verified the specific cloud and handset behaviors documented above; it does not establish production reliability, automatic full-screen display, real-earthquake accuracy, or life-safety suitability. See `VALIDATION_REPORT.md` for current evidence and exact boundaries.
+
+Reproduce the controlled synthetic evaluation without AWS:
+
+```powershell
+.\.venv\Scripts\python.exe scripts\run_evaluation.py --output artifacts\evaluation\latest --trials-per-scenario 12 --base-seed 20261019 --publish-dashboard
+```
+
+The checked-in report-ready snapshot is under `results/offline-evaluation/`. It is a software simulation result, not real-world earthquake-detection accuracy.
 
 ## Documentation
 

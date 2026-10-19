@@ -213,10 +213,33 @@ function Stop-ManagedReviewProcesses {
         }
         $tree = @(Get-ManagedProcessTree -RootPid ([int]$record.pid))
         foreach ($node in $tree) {
-            $process = Get-Process -Id ([int]$node.Pid) -ErrorAction SilentlyContinue
-            if (!$process) { continue }
-            Stop-Process -Id ([int]$node.Pid) -Force -ErrorAction Stop
-            $process.WaitForExit(10000) | Out-Null
+            $targetPid = [int]$node.Pid
+
+            $process = Get-Process -Id $targetPid -ErrorAction SilentlyContinue
+
+            if (!$process) {
+                continue
+            }
+
+            try {
+                Stop-Process -Id $targetPid -Force -ErrorAction Stop
+            }
+            catch {
+                # Ignore processes that exited before Stop-Process ran.
+                # Preserve other termination failures.
+                if (Get-Process -Id $targetPid -ErrorAction SilentlyContinue) {
+                    throw
+                }
+            }
+
+            try {
+                $process.WaitForExit(10000) | Out-Null
+            }
+            catch {
+                if (Get-Process -Id $targetPid -ErrorAction SilentlyContinue) {
+                    throw
+                }
+            }
         }
     }
 }

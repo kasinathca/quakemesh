@@ -157,6 +157,27 @@ def test_scenario_and_physical_evidence_never_cross_merge(tmp_path):
     }
 
 
+def test_local_correlation_handles_reverse_timestamp_arrival(tmp_path):
+    runtime = make_runtime(tmp_path)
+    run = runtime.scenarios.start_run("distributed", source="test")
+    assert runtime.application.repository.mark_scenario_running(run["run_id"], 1_000_000)
+    capture = CaptureTransport()
+    fleet = Fleet(
+        Fleet.around(8, 12.9716, 77.5946, device_prefix="QM-REVERSE"),
+        capture,
+        seed=42,
+    )
+    fleet.trigger_devices(list(range(8)), base_timestamp_ms=1_000_000)
+
+    results = [
+        runtime.application.trigger(payload, "test-direct", run_id=run["run_id"])
+        for payload in sorted(capture.triggers, key=lambda item: item["observed_at_ms"], reverse=True)
+    ]
+
+    assert any(result.get("event") for result in results)
+    assert len(runtime.application.repository.list_events(100, run["run_id"])) == 1
+
+
 def test_distributed_alert_ack_export_and_reset_are_truthful(tmp_path):
     runtime = make_runtime(tmp_path)
     run = execute(runtime, "distributed")
@@ -207,45 +228,44 @@ def test_v2_api_envelopes_errors_and_complete_local_surface(tmp_path, monkeypatc
     runtime = make_runtime(tmp_path)
     runtime_app = importlib.import_module("local_runtime.app")
     monkeypatch.setattr(runtime_app, "_runtime", runtime)
-    client = TestClient(runtime_app.app, raise_server_exceptions=False)
+    with TestClient(runtime_app.app, raise_server_exceptions=False) as client:
+        for path in (
+            "/health",
+            "/v1/config",
+            "/v1/devices",
+            "/v1/events",
+            "/v1/alerts",
+            "/v1/scenarios",
+            "/v1/scenario-runs",
+            "/v1/session",
+        ):
+            response = client.get(path)
+            assert response.status_code == 200
+            assert response.json()["schema_version"] == "2.0"
+            assert response.json()["request_id"]
 
-    for path in (
-        "/health",
-        "/v1/config",
-        "/v1/devices",
-        "/v1/events",
-        "/v1/alerts",
-        "/v1/scenarios",
-        "/v1/scenario-runs",
-        "/v1/session",
-    ):
-        response = client.get(path)
-        assert response.status_code == 200
-        assert response.json()["schema_version"] == "2.0"
-        assert response.json()["request_id"]
+        invalid = client.post(
+            "/v1/demo/scenario-runs",
+            json={"scenario": "isolated", "parameters": {"ignored": True}},
+        )
+        assert invalid.status_code == 400
+        body = invalid.json()
+        assert body["schema_version"] == "2.0"
+        assert body["error"]["code"] == "INVALID_SCENARIO_PARAMETERS"
+        assert body["error"]["request_id"]
 
-    invalid = client.post(
-        "/v1/demo/scenario-runs",
-        json={"scenario": "isolated", "parameters": {"ignored": True}},
-    )
-    assert invalid.status_code == 400
-    body = invalid.json()
-    assert body["schema_version"] == "2.0"
-    assert body["error"]["code"] == "INVALID_SCENARIO_PARAMETERS"
-    assert body["error"]["request_id"]
-
-    active = runtime.scenarios.start_run("isolated", source="test")
-    blocked = client.post("/v1/demo/scenario-runs", json={"scenario": "isolated"})
-    assert blocked.status_code == 409
-    assert blocked.json()["error"] == {
-        "code": "SCENARIO_ALREADY_RUNNING",
-        "message": "A scenario run is already active.",
-        "request_id": blocked.json()["error"]["request_id"],
-        "details": {"active_run_id": active["run_id"]},
-    }
-    reset = client.post("/v1/demo/reset")
-    assert reset.status_code == 409
-    assert reset.json()["error"]["code"] == "SCENARIO_RESET_BLOCKED"
+        active = runtime.scenarios.start_run("isolated", source="test")
+        blocked = client.post("/v1/demo/scenario-runs", json={"scenario": "isolated"})
+        assert blocked.status_code == 409
+        assert blocked.json()["error"] == {
+            "code": "SCENARIO_ALREADY_RUNNING",
+            "message": "A scenario run is already active.",
+            "request_id": blocked.json()["error"]["request_id"],
+            "details": {"active_run_id": active["run_id"]},
+        }
+        reset = client.post("/v1/demo/reset")
+        assert reset.status_code == 409
+        assert reset.json()["error"]["code"] == "SCENARIO_RESET_BLOCKED"
 
 
 def test_stage_stream_sequence_is_monotonic_and_resumeable(tmp_path):

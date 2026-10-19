@@ -253,19 +253,28 @@ class QuakeMeshStack(Stack):
         correlator.add_event_source(
             lambda_events.DynamoEventSource(
                 evidence,
-                starting_position=lambda_.StartingPosition.LATEST,
+                # Every review session owns a newly-created, initially empty stream.
+                # TRIM_HORIZON closes the deployment/activation race: records written
+                # after table creation but before the poller reaches Enabled remain
+                # eligible. Correlator event writes are idempotent for replayed input.
+                starting_position=lambda_.StartingPosition.TRIM_HORIZON,
                 batch_size=20,
                 retry_attempts=2,
                 bisect_batch_on_error=True,
+                max_record_age=Duration.minutes(30),
             )
         )
         dispatcher.add_event_source(
             lambda_events.DynamoEventSource(
                 event,
-                starting_position=lambda_.StartingPosition.LATEST,
+                # The event table and stream are also session-isolated and empty at
+                # creation. Retaining pre-activation records prevents confirmed events
+                # from being stranded before the dispatcher poller is ready.
+                starting_position=lambda_.StartingPosition.TRIM_HORIZON,
                 batch_size=10,
                 retry_attempts=2,
                 bisect_batch_on_error=True,
+                max_record_age=Duration.minutes(30),
             )
         )
 

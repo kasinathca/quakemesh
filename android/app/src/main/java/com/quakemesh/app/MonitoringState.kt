@@ -47,6 +47,10 @@ object MonitoringState {
                 .put("created_at_ms", alert.createdAtMs)
                 .put("acknowledged_at_ms", alert.acknowledgedAtMs)
                 .put("acknowledgement_source", alert.acknowledgementSource)
+                .put("provenance_type", alert.provenanceType)
+                .put("warning_area_h3", org.json.JSONArray(alert.warningAreaH3))
+                .put("authoritative_record", alert.authoritativeRecord)
+                .put("controlled_test", alert.controlledTest)
                 .toString())
             .apply()
         update(context) { it.copy(latestAlert = alert) }

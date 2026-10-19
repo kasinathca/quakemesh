@@ -80,7 +80,7 @@ Browser E2E verifies:
 
 The subsequent Android milestone added typed V2 envelope/error handling, physical observation submission without scenario headers, observable foreground monitoring state, recurring heartbeats, a professional status UI, local-vs-corroborated state separation, local alert polling, `alert_id`-first FCM handling, and idempotent Android acknowledgement calls. The current Windows host completed 5 focused V2 envelope/error/alert JVM tests, debug compilation/APK assembly, and Android lint.
 
-This does not revise or weaken the local control-plane evidence above. Emulator/physical-device execution, real Android-to-FastAPI traffic, and live FCM remain unverified.
+This historical 2026-10-07 boundary was superseded on 2026-10-19 by physical-device installation/launch, heartbeat/H3 and motion-evidence verification, notification preview tests, and a controlled labeled FCM receipt. The current limitations are recorded below.
 
 ## AWS and dashboard V2 addendum — 2026-10-08
 
@@ -88,13 +88,13 @@ The subsequent cloud milestone replaced the deployable V1 surface with a session
 
 This source, contract, synthesis, and local browser evidence was subsequently extended by the live lifecycle evidence below.
 
-## Explicitly not verified
+## Remaining unverified or limited behavior
 
-- Android emulator or physical-device UI/sensor/location/network behavior; build and lint are verified separately in the addendum.
-- Automatic expiry execution; manual exact-session teardown is live-verified separately below.
+- Broad Android device/emulator coverage, TalkBack, process recreation, and automatic heads-up behavior. The tested Android 15 handset did not show an automatic heads-up overlay; full-screen intent is intentionally disabled.
+- Successful automatic expiry execution. The 2026-10-19 session remained active past expiry and required manual exact-session teardown.
 - AWS reset/export controls; they are not part of the current cloud slice.
-- Detailed CloudWatch operational inspection and measured costs. Live IoT delivery, API ingress, DynamoDB-backed correlation/read paths, inventory, and teardown are verified separately below.
-- Live FCM delivery or physical phone receipt.
+- Load/performance limits and final historical AWS billing after reporting delay.
+- Authoritative physical-alert acknowledgement. Controlled FCM receipt was verified, but that test intentionally had no authoritative alert row and generated no ACK.
 
 ## Review harness addendum — 2026-10-08
 
@@ -109,3 +109,9 @@ The review harness is READY for the verified no-phone/no-FCM presentation scope.
 Re-running START during the first session reused the same session, stack, and three owned local processes. STATUS reported exactly one owned `CREATE_COMPLETE` stack, health PASS, 25 dynamic IoT Things, and live device/event/alert reads. Both STOP runs returned `CLEAN`; the verifier found the exact stack, Things, certificates, DynamoDB tables, Lambda functions/layer, alarms, log groups, IAM roles, IoT policy, Scheduler schedule, EventBridge rule, and API Gateway resources absent. A further STOP returned the clean already-stopped no-op result. Final STATUS reported zero owned QuakeMesh stacks, absent review state, restored local Android configuration, and ports 8000/8080/8081 stopped.
 
 Shared `CDKToolkit` resources and content-addressed assets remain intentionally retained because they are not exclusively session-owned. FCM was not configured and was reported `NOT_APPLICABLE`; no physical phone was used. Automatic expiry cleanup remains unexecuted live.
+
+## Final AWS, Android, and evaluation addendum — 2026-10-19
+
+Session `qm-20261019-112257-b77a` used the repaired stream mappings and processing code. It persisted 25 scenario devices and nine scenario evidence rows, created one authoritative scenario event, generated and delivered 17 simulator alerts, and recorded zero correlator/dispatcher errors. The physical handset registered heartbeat/H3 state and an enabled session-owned SNS endpoint; a uniquely labeled controlled test proved FCM receipt, while physical motion evidence remained separate from the simulated event. Manual cleanup and a repeated read-only audit verified the stack and all 96 captured resource records absent. Automatic expiry did not complete on schedule.
+
+The offline research evaluation completed 48 distinct seeded synthetic trials with the production detector and real H3: TP=24, TN=24, FP=0, FN=0, mean/median confirmation latency 513.75/469.5 ms, and 311/348 injected triggers delivered. These are controlled software-simulation results, not real-world earthquake-detection accuracy. Sanitized report data and figures are tracked under `results/offline-evaluation/`.

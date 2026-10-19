@@ -126,9 +126,13 @@ class MainActivity : Activity() {
         startButton = actionButton("Start monitoring", Color.rgb(38, 91, 75)) { startMonitoring() }
         stopButton = actionButton("Stop monitoring", Color.rgb(73, 86, 98)) { stopMonitoring() }
         acknowledgeButton = actionButton("Acknowledge latest alert", Color.rgb(150, 54, 45)) { acknowledgeLatest() }
+        val previewButton = actionButton("Preview local controlled notification", Color.rgb(154, 91, 24)) { previewNotification() }
+        val warningTonePreviewButton = actionButton("Preview warning tone (controlled test)", Color.rgb(150, 54, 45)) { previewNotification(useWarningTone = true) }
         actions.addView(startButton)
         actions.addView(stopButton, marginTop(dp(8)))
         actions.addView(acknowledgeButton, marginTop(dp(8)))
+        if (BuildConfig.DEBUG) actions.addView(previewButton, marginTop(dp(8)))
+        if (BuildConfig.DEBUG) actions.addView(warningTonePreviewButton, marginTop(dp(8)))
         content.addView(actions)
         setContentView(ScrollView(this).apply { addView(content) })
     }
@@ -207,7 +211,7 @@ class MainActivity : Activity() {
         } ?: "—"
         startButton.isEnabled = !snapshot.monitoring
         stopButton.isEnabled = snapshot.monitoring
-        acknowledgeButton.isEnabled = alert != null && alert.acknowledgedAtMs == null && !alert.alertId.startsWith("legacy:")
+        acknowledgeButton.isEnabled = alert != null && alert.acknowledgedAtMs == null && AlertPresentationPolicy.forAlert(alert).canAcknowledge
     }
 
     private fun refreshAlerts() {
@@ -225,12 +229,26 @@ class MainActivity : Activity() {
 
     private fun acknowledgeLatest() {
         val alert = MonitoringState.snapshot(this).latestAlert ?: return
+        if (!AlertPresentationPolicy.forAlert(alert).canAcknowledge) return
         acknowledgeButton.isEnabled = false
         ApiClient.acknowledge(alert.alertId, DeviceIdentity.id(this)) { result ->
             when (result) {
                 is ApiResult.Success -> MonitoringState.recordAlert(this, result.data.alert)
                 is ApiResult.Failure -> MonitoringState.update(this) { it.copy(apiFailure = result.error) }
             }
+        }
+    }
+
+    private fun previewNotification(useWarningTone: Boolean = false) {
+        if (NotificationPermissionPolicy.requiresRuntimePermission(Build.VERSION.SDK_INT) &&
+            checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            requestNeededPermissions()
+            return
+        }
+        if (useWarningTone) {
+            NotificationHelper.showControlledPreview(this, "local-warning-tone-preview-${System.currentTimeMillis()}", true)
+        } else {
+            NotificationHelper.showControlledPreview(this)
         }
     }
 

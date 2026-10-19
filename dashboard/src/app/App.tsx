@@ -5,6 +5,7 @@ import { AlertsView } from "../features/alerts/AlertsView";
 import { DevicesView } from "../features/devices/DevicesView";
 import { EventsView } from "../features/events/EventsView";
 import { ExperimentsView } from "../features/experiments/ExperimentsView";
+import { EvaluationView } from "../features/evaluation/EvaluationView";
 import { InfrastructureView } from "../features/infrastructure/InfrastructureView";
 import { LiveMap } from "../features/map/LiveMap";
 import { Overview } from "../features/overview/Overview";
@@ -13,7 +14,7 @@ import { SessionView } from "../features/session/SessionView";
 import { useControlPlane } from "./useControlPlane";
 
 const views = new Set<ViewId>([
-  "overview", "map", "scenarios", "events", "devices", "alerts", "experiments", "infrastructure", "session",
+  "overview", "map", "scenarios", "events", "devices", "alerts", "experiments", "evaluation", "infrastructure", "session",
 ]);
 
 function initialView(): ViewId {
@@ -44,6 +45,7 @@ export function App() {
     devices: <DevicesView control={control} />,
     alerts: <AlertsView control={control} />,
     experiments: <ExperimentsView control={control} />,
+    evaluation: <EvaluationView />,
     infrastructure: <InfrastructureView control={control} />,
     session: <SessionView control={control} />,
   }[view];

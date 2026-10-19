@@ -1,38 +1,44 @@
-import json,re
+import json
 from pathlib import Path
-ROOT=Path(__file__).resolve().parents[1]
+
+ROOT = Path(__file__).resolve().parents[1]
+
 
 def test_json_contracts_parse_and_use_explicit_versions():
-    for p in (ROOT/"schemas").glob("*.json"):
-        data=json.loads(p.read_text())
-        serialized=data.get("$id","")+json.dumps(data)
-        expected="2.0" if p.name.startswith("v2-") else "1.0"
+    for p in (ROOT / "schemas").glob("*.json"):
+        data = json.loads(p.read_text())
+        serialized = data.get("$id", "") + json.dumps(data)
+        expected = "2.0" if p.name.startswith("v2-") else "1.0"
         assert expected in serialized
 
+
 def test_iot_policy_is_thing_scoped():
-    s=(ROOT/"aws/infrastructure/stack.py").read_text()
-    assert '${iot:Connection.Thing.ThingName}' in s
+    s = (ROOT / "aws/infrastructure/stack.py").read_text()
+    assert "${iot:Connection.Thing.ThingName}" in s
     assert 'topic_root = f"quakemesh/v1/{session_id}/devices"' in s
     assert 'resource_name=f"{topic_root}/{thing_var}/trigger"' in s
     assert 'resource_name=f"{topic_root}/{thing_var}/alerts"' in s
 
+
 def test_https_writes_require_api_key():
-    s=(ROOT/"aws/infrastructure/stack.py").read_text()
-    assert s.count('api_key_required=True')==3
+    s = (ROOT / "aws/infrastructure/stack.py").read_text()
+    assert s.count("api_key_required=True") == 3
+
 
 def test_aws_v2_stack_is_session_owned_and_destroyable():
-    s=(ROOT/"aws/infrastructure/stack.py").read_text()
+    s = (ROOT / "aws/infrastructure/stack.py").read_text()
     for value in ['"SessionId": session_id', '"ExpiresAt": expires_at', '"Ephemeral": "true"']:
         assert value in s
     assert "RemovalPolicy.RETAIN" not in s
     assert s.count("removal_policy=RemovalPolicy.DESTROY") >= 6
-    assert 'schedule_expression=f"at({expires_at.removesuffix(\'Z\')})"' in s
+    assert "schedule_expression=f\"at({expires_at.removesuffix('Z')})\"" in s
     assert '"cloudformation:DeleteStack"' in s
     assert '"iot:ListThings"' in s
 
+
 def test_aws_v2_api_and_provenance_contracts_are_present():
-    api=(ROOT/"aws/lambdas/api.py").read_text()
-    ingress=(ROOT/"aws/lambdas/ingress.py").read_text()
+    api = (ROOT / "aws/lambdas/api.py").read_text()
+    ingress = (ROOT / "aws/lambdas/ingress.py").read_text()
     for endpoint in ["/health", "/v1/devices", "/v1/events", "/v1/alerts"]:
         assert endpoint in api
     assert "ALERT_DEVICE_MISMATCH" in api
@@ -60,25 +66,50 @@ def test_lambda_asset_preserves_layer_path_and_bootstraps_src_imports():
     assert '".pytest-tmp*"' in stack
     assert api.index("from .common import") < api.index("from quakemesh_core.geo import")
 
+
 def test_no_v1_vpc_compute_database_constructs():
-    s=(ROOT/"aws/infrastructure/stack.py").read_text().lower()
-    forbidden=["aws_ec2","aws_rds","aws_ecs","aws_eks","natgateway","vpc("]
+    s = (ROOT / "aws/infrastructure/stack.py").read_text().lower()
+    forbidden = ["aws_ec2", "aws_rds", "aws_ecs", "aws_eks", "natgateway", "vpc("]
     assert all(x not in s for x in forbidden)
 
+
 def test_android_has_no_manual_confirmation_control():
-    s=(ROOT/"android/app/src/main/java/com/quakemesh/app/MainActivity.kt").read_text().lower()
+    s = (ROOT / "android/app/src/main/java/com/quakemesh/app/MainActivity.kt").read_text().lower()
     assert "confirm earthquake" not in s and "simulate earthquake" not in s
 
+
+def test_android_physical_firebase_contract_is_explicit_and_not_scenario_tagged():
+    gradle = (ROOT / "android/app/build.gradle.kts").read_text(encoding="utf-8")
+    manifest = (ROOT / "android/app/src/main/AndroidManifest.xml").read_text(encoding="utf-8")
+    api = (ROOT / "android/app/src/main/java/com/quakemesh/app/ApiClient.kt").read_text(encoding="utf-8")
+    sensor = (ROOT / "android/app/src/main/java/com/quakemesh/app/SensorService.kt").read_text(encoding="utf-8")
+    messaging = (ROOT / "android/app/src/main/java/com/quakemesh/app/QuakeMessagingService.kt").read_text(encoding="utf-8")
+    presentation = (ROOT / "android/app/src/main/java/com/quakemesh/app/AlertPresentation.kt").read_text(encoding="utf-8")
+    assert 'applicationId = "com.quakemesh.app"' in gradle
+    assert 'pluginManager.apply("com.google.gms.google-services")' in gradle
+    assert "com.google.firebase.MESSAGING_EVENT" in manifest
+    assert "android.permission.POST_NOTIFICATIONS" in manifest
+    assert "android.permission.ACCESS_FINE_LOCATION" in manifest
+    assert "X-QuakeMesh-Run-Id" not in api
+    assert 'body.put("fcm_token", fcmToken)' in api
+    assert "FirebaseMessaging.getInstance().token" in sensor
+    assert "AlertDeliveryDeduplicator.firstDelivery" in messaging
+    assert 'PREFS = "quakemesh_alert_dedupe"' in presentation
+    assert "context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)" in presentation
+    assert "ApiClient.acknowledge" not in messaging  # acknowledgement remains an explicit UI action
+
+
 def test_secret_paths_are_gitignored():
-    s=(ROOT/".gitignore").read_text()
-    for x in ["android/app/google-services.json","android/local.properties","artifacts/runtime-config.json","*.key"]:assert x in s
+    s = (ROOT / ".gitignore").read_text()
+    for x in ["android/app/google-services.json", "android/local.properties", "artifacts/runtime-config.json", "*.key"]:
+        assert x in s
 
 
 def test_windows_validator_scopes_ruff_and_checks_native_exit_codes():
     text = (ROOT / "scripts" / "validate.ps1").read_text(encoding="utf-8")
     assert "-m ruff check src local_runtime simulator aws scripts tests" in text
     assert "--select E4,E7,E9,F" in text
-    assert 'ruff check .' not in text.lower()
+    assert "ruff check ." not in text.lower()
     assert "$LASTEXITCODE -ne 0" in text
     assert "PASS, $script:Skipped SKIP, 0 FAIL" in text
 
@@ -107,6 +138,47 @@ def test_review_start_preserves_ordered_state_process_records():
     assert "DateTimeOffset]::Parse([string]" not in start
     assert "$expires = [DateTimeOffset]$runtime.expires_at" in start
     assert start.count("powershell.exe -NoProfile -ExecutionPolicy Bypass -File") >= 2
+
+
+def test_review_start_captures_diagnostics_before_failure_teardown():
+    start = (ROOT / "scripts/review/start.ps1").read_text(encoding="utf-8")
+    catch_block = start[start.index("catch {") :]
+    assert "aws/scripts/capture_diagnostics.py" in catch_block
+    assert "artifacts\\review\\diagnostics" in catch_block
+    assert catch_block.index("aws/scripts/capture_diagnostics.py") < catch_block.index('"stop.ps1"')
+    assert "teardown will continue" in catch_block
+
+
+def test_review_start_waits_for_both_stream_mappings_before_smoke_and_cleanup_on_failure():
+    start = (ROOT / "scripts/review/start.ps1").read_text(encoding="utf-8")
+    readiness = start.index("aws/scripts/verify_stream_mappings.py")
+    smoke = start.index("aws/scripts/smoke_test.py")
+    simulation = start.index("aws\\scripts\\run_aws_scenario.ps1")
+    assert readiness < smoke < simulation
+    assert '"--timeout-seconds", "180"' in start
+    assert "STREAM_READINESS_FAILURE" in start
+    catch_block = start[start.index("catch {") :]
+    assert catch_block.index("aws/scripts/capture_diagnostics.py") < catch_block.index('"stop.ps1"')
+
+
+def test_review_start_supplies_validated_reusable_sns_application_arn():
+    start = (ROOT / "scripts/review/start.ps1").read_text(encoding="utf-8")
+    deploy = (ROOT / "aws/scripts/deploy.ps1").read_text(encoding="utf-8")
+    expected = "arn:aws:sns:ap-south-1:101541767123:app/GCM/QuakeMesh-FCM-Demo"
+
+    assert expected in start
+    assert "$env:QM_SNS_PLATFORM_APPLICATION_ARN = $SnsPlatformApplicationArn" in start
+    assert "-SnsPlatformApplicationArn $SnsPlatformApplicationArn" in start
+    assert "$env:QM_SNS_PLATFORM_APPLICATION_ARN = $SnsPlatformApplicationArn" in deploy
+
+
+def test_stream_mappings_replay_session_backlog_and_bound_retry_age():
+    stack = (ROOT / "aws/infrastructure/stack.py").read_text(encoding="utf-8")
+    assert stack.count("StartingPosition.TRIM_HORIZON") == 2
+    assert "StartingPosition.LATEST" not in stack
+    assert stack.count("max_record_age=Duration.minutes(30)") == 2
+    assert stack.count("retry_attempts=2") == 2
+    assert stack.count("bisect_batch_on_error=True") == 2
 
 
 def test_teardown_removes_exact_inventory_log_groups_after_stack_destroy():

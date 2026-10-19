@@ -3,6 +3,7 @@ param(
   [string]$Profile = "",
   [string]$SessionId = "",
   [ValidateRange(60, 240)][int]$DurationMinutes = 120,
+  [string]$SnsPlatformApplicationArn = $env:QM_SNS_PLATFORM_APPLICATION_ARN,
   [string]$AwsCliPath = ""
 )
 $ErrorActionPreference = "Stop"
@@ -35,6 +36,13 @@ if (!$identity.Account) { throw "AWS account identity is missing." }
 if ($identity.Arn -match ':root$') { throw "Refusing to deploy with the AWS account root identity." }
 $env:CDK_DEFAULT_ACCOUNT = $identity.Account
 $env:CDK_DEFAULT_REGION = $Region
+if ($SnsPlatformApplicationArn) {
+  $expectedSnsArn = "arn:aws:sns:$Region`:$($identity.Account):app/GCM/QuakeMesh-FCM-Demo"
+  if ($SnsPlatformApplicationArn -ne $expectedSnsArn) {
+    throw "SNS platform application ARN must match the authenticated account, requested region, and QuakeMesh-FCM-Demo application."
+  }
+  $env:QM_SNS_PLATFORM_APPLICATION_ARN = $SnsPlatformApplicationArn
+}
 
 $stackProbe = Invoke-NativeCommandResult -FilePath $AwsCli -ArgumentList @(
   "cloudformation", "describe-stacks", "--stack-name", $StackName,

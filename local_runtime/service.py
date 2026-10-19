@@ -278,7 +278,14 @@ class QuakeMeshService:
                 occurrence - self.config.evidence_window_ms,
                 run_id,
             )
-            decision = detect(recent, occurrence, self.geo, self.config)
+            # Triggers can complete out of timestamp order. Evaluate the entire
+            # provenance-isolated set at its latest observation so that an older
+            # record processed last does not hide already-persisted newer records.
+            evaluation_time = max(
+                (item.observed_at_ms for item in recent),
+                default=occurrence,
+            )
+            decision = detect(recent, evaluation_time, self.geo, self.config)
             recency_passed = bool(decision.evidence_ids)
             device_passed = len(decision.device_ids) >= self.config.min_devices
             spatial_passed = len(decision.cells) >= self.config.min_distinct_cells

@@ -22,6 +22,12 @@
 13. `QM-TRC-001_TRACEABILITY.md` — requirements → components → persistence → interfaces → tests.
 14. `QM-OPS-001_OPERATIONS.md` — setup, run, deploy, observe and teardown.
 
+V2 operational supplement: `v2/QM-V2-AWS-PIPELINE-REPAIR.md` records both October 2026 warm-up failures, the DynamoDB Streams readiness repair, durable diagnostics, and the approval-gated live verification procedure.
+
+V2 evaluation supplement: `v2/QM-V2-OFFLINE-EVALUATION-AND-ANDROID-WARNINGS.md` defines the reproducible synthetic batch methodology, measured confusion matrix, dashboard exports, Android warning channels, local preview, and full-screen-intent limitation.
+
+Tracked evaluation evidence: `../results/offline-evaluation/` contains the sanitized report, aggregate summary, per-trial CSV, robustness table, and SVG figures generated from seed `20261019`.
+
 ## Architecture decision records
 
 - `ADRs/ADR-001-H3.md`

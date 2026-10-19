@@ -63,8 +63,10 @@ def _trigger(payload:dict,topic:str|None,transport:str,provenance_type:str,scena
     if topic and _topic_identity(topic,"trigger")!=t.device_id: raise ValidationError("topic/device identity mismatch")
     cfg=DetectionConfig.from_env();validate_observation_time(t.observed_at_ms,int(time.time()*1000),cfg.max_clock_skew_ms);e=canonicalize_trigger(t,geo(),cfg)
     if not _update_device(device_id=e.device_id,seq=e.seq,observed_at_ms=e.observed_at_ms,cell=e.h3_cell,coarse=e.correlation_cell,transport=transport,provenance_type=provenance_type,scenario_run_id=scenario_run_id):
+        log("EVIDENCE_REJECTED",request,device_id=e.device_id,evidence_id=e.evidence_id,provenance_type=provenance_type,scenario_run_id=scenario_run_id,reason="duplicate_or_replay")
         return {"accepted":False,"duplicate_or_replay":True,"evidence_id":e.evidence_id}
     if not passes_motion_gate(MotionFeatures(e.motion_rms,e.motion_peak,1),cfg):
+        log("EVIDENCE_REJECTED",request,device_id=e.device_id,evidence_id=e.evidence_id,provenance_type=provenance_type,scenario_run_id=scenario_run_id,reason="below_motion_gate",motion_rms=e.motion_rms,motion_peak=e.motion_peak)
         return {"accepted":False,"below_motion_gate":True,"evidence_id":e.evidence_id}
     bucket=e.observed_at_ms//10_000;ttl=int(time.time())+cfg.evidence_ttl_seconds
     partition=f"{provenance_type}#{scenario_run_id or '-'}"
@@ -72,7 +74,9 @@ def _trigger(payload:dict,topic:str|None,transport:str,provenance_type:str,scena
     if scenario_run_id:item["scenario_run_id"]=scenario_run_id
     try:_ddb.Table(env("QM_EVIDENCE_TABLE")).put_item(Item=item,ConditionExpression="attribute_not_exists(evidence_id)")
     except ClientError as ex:
-        if ex.response.get("Error",{}).get("Code")=="ConditionalCheckFailedException":return {"accepted":False,"duplicate_or_replay":True,"evidence_id":e.evidence_id}
+        if ex.response.get("Error",{}).get("Code")=="ConditionalCheckFailedException":
+            log("EVIDENCE_REJECTED",request,device_id=e.device_id,evidence_id=e.evidence_id,provenance_type=provenance_type,scenario_run_id=scenario_run_id,reason="duplicate_evidence")
+            return {"accepted":False,"duplicate_or_replay":True,"evidence_id":e.evidence_id}
         raise
     log("EVIDENCE_PERSISTED",request,device_id=e.device_id,evidence_id=e.evidence_id,provenance_type=provenance_type,scenario_run_id=scenario_run_id)
     return {"accepted":True,"evidence_id":e.evidence_id,"bucket":item["bucket"]}

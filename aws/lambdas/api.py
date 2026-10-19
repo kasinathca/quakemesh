@@ -51,7 +51,15 @@ def _table(name: str):
 
 
 def _items(table_name: str, limit: int) -> list[dict]:
-    return _table(table_name).scan(Limit=limit).get("Items", [])
+    table=_table(table_name);items=[];kwargs={"Limit":limit}
+    while len(items)<limit:
+        response=table.scan(**kwargs)
+        items.extend(response.get("Items",[]))
+        last_key=response.get("LastEvaluatedKey")
+        if not last_key:break
+        kwargs["ExclusiveStartKey"]=last_key
+        kwargs["Limit"]=limit-len(items)
+    return items[:limit]
 
 
 def _bounded_limit(event: dict, default: int, maximum: int) -> int:

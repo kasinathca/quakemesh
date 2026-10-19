@@ -1,5 +1,28 @@
 # QuakeMesh V2 changelog
 
+## 2026-10-19 — offline research evaluation and Android warning UX
+
+- Added a deterministic independent-trial evaluator around the actual local detector and real H3, with external-only truth labels, loss, jitter, device-count, timing, and geographic variation.
+- Added per-trial CSV/JSON, aggregate JSON/CSV/Markdown, labeled SVG figures, event-level confusion metrics, zero-denominator handling, Wilson intervals, deterministic latency bootstrap intervals, and explicit cloud/receipt non-observation fields.
+- Measured 48 synthetic trials with TP 24, TN 24, FP 0, FN 0 and zero runner failures; documented the finite-sample confidence intervals and the limitation that these are not real-world earthquake-accuracy claims.
+- Added an Evaluation / Metrics dashboard view with filters, plots, confusion matrix, actual generated data, and CSV/JSON/PNG exports while preserving Scenario Lab and AWS read-only behavior.
+- Added silent monitoring, versioned authoritative-warning and controlled-preview channels, two original synthesized tones, high-priority heads-up presentation, and a dedicated warning activity with provenance and H3 context.
+- Added a debug-only local preview which creates no cloud record and cannot ACK; preserved authoritative ACK, FCM deduplication/token handling, and polling fallback.
+- Deliberately retained heads-up fallback rather than requesting restricted automatic full-screen behavior.
+- Physically verified both labeled local preview channels on Android API 35, warning-screen navigation, background non-launch behavior, stable-ID deduplication, and unchanged authoritative alert state. Recorded that this Motorola build retained the HIGH-importance notifications in the shade and reported them non-interruptive instead of showing a heads-up overlay.
+
+## 2026-10-19 — DynamoDB Streams startup-readiness repair
+
+- Preserved the cleanly torn-down `qm-20261019-101849-9efb` failure evidence: AWS ingress produced 26 device and nine evidence rows, but no authoritative event or alert.
+- Corrected both newly-created session stream mappings from `LATEST` to `TRIM_HORIZON`, retaining unchanged detector thresholds and existing replay idempotency.
+- Added an exact-ARN, bounded `Enabled` readiness gate for evidence-to-correlator and event-to-dispatcher mappings before smoke or simulator ingestion.
+- Added handler boundary logs and durable mapping/stream/Lambda/CloudWatch metric diagnostics before failed-session cleanup.
+- Added offline regressions for activation delay, disabled/wrong mappings, timeout diagnostics, INSERT handling, replay, retries, dispatch, real H3 correlation and START cleanup ordering.
+- Made START validate the reusable `QuakeMesh-FCM-Demo` ARN against the authenticated account/region, export it through `QM_SNS_PLATFORM_APPLICATION_ARN`, and pass it explicitly into deployment.
+- Live-verified the repair in session `qm-20261019-112257-b77a`: both mappings Enabled/OK, 25 scenario devices, nine scenario evidence rows, one confirmed event, 17 alert rows, 17 simulator receipts, and zero Lambda errors.
+- Verified an AWS-configured physical handset heartbeat/H3 registration, enabled session-owned SNS endpoint, uniquely labeled controlled FCM receipt, and independently isolated physical motion evidence.
+- Fixed diagnostic CLI serialization of boto3 timestamps and made local correlation deterministic for reverse-timestamp arrivals; the full suite now has 98 passing tests.
+
 ## 2026-10-08 — live AWS lifecycle verification
 
 - Completed two distinct default 25-device START→READY→STOP/CLEAN sessions in account `101541767123`, region `ap-south-1`, plus active-session START reuse and already-stopped STOP.

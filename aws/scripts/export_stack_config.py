@@ -33,6 +33,7 @@ def main() -> None:
         "session_id": args.session_id,
         "account_id": identity["Account"],
         "region": args.region,
+        "profile": args.profile,
         "created_at": stack["CreationTime"].astimezone(timezone.utc).isoformat(),
         "expires_at": outputs["ExpiresAt"],
         "exported_at": datetime.now(timezone.utc).isoformat(),

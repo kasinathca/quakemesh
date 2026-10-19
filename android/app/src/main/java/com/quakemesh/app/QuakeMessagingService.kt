@@ -6,11 +6,7 @@ import com.google.firebase.messaging.RemoteMessage
 
 class QuakeMessagingService : FirebaseMessagingService() {
     private fun firstDelivery(alertId: String, eventId: String): Boolean {
-        val prefs = getSharedPreferences("quakemesh_alert_dedupe", MODE_PRIVATE)
-        val key = if (alertId.isNotBlank()) "alert:$alertId" else "legacy-event:$eventId"
-        if (prefs.getBoolean(key, false)) return false
-        prefs.edit().putBoolean(key, true).apply()
-        return true
+        return AlertDeliveryDeduplicator.firstDelivery(this, alertId, eventId)
     }
 
     override fun onMessageReceived(message: RemoteMessage) {
@@ -28,6 +24,10 @@ class QuakeMessagingService : FirebaseMessagingService() {
                 ?: System.currentTimeMillis(),
             acknowledgedAtMs = null,
             acknowledgementSource = null,
+            provenanceType = message.data["provenance_type"],
+            warningAreaH3 = message.data["warning_area_h3"]?.split(',')?.filter { it.isNotBlank() } ?: emptyList(),
+            authoritativeRecord = alertId.isNotBlank() && !message.data["controlled_test"].toBoolean(),
+            controlledTest = message.data["controlled_test"].toBoolean(),
         )
         MonitoringState.recordAlert(this, alert)
         val title = message.notification?.title ?: "QuakeMesh corroborated event"

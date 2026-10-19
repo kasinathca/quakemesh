@@ -3,6 +3,7 @@ param(
     [string]$Region = "ap-south-1",
     [ValidateRange(60, 240)][int]$DurationMinutes = 180,
     [ValidateRange(4, 100)][int]$Devices = 25,
+    [string]$SnsPlatformApplicationArn = "arn:aws:sns:ap-south-1:101541767123:app/GCM/QuakeMesh-FCM-Demo",
     [string]$AwsCliPath = ""
 )
 $ErrorActionPreference = "Stop"
@@ -41,6 +42,11 @@ if ($branch -ne "feature/android-v2") { throw "Review START requires feature/and
 $readinessPath = Join-Path $paths.Review "readiness.json"
 if (!(Test-Path -LiteralPath $readinessPath)) { throw "Run scripts/review/prepare.ps1 once before START." }
 $aws = Get-ReviewAwsContext -Profile $Profile -Region $Region -AwsCliPath $AwsCliPath
+$expectedSnsArn = "arn:aws:sns:$Region`:$($aws.Account):app/GCM/QuakeMesh-FCM-Demo"
+if ($SnsPlatformApplicationArn -ne $expectedSnsArn) {
+    throw "SNS platform application ARN must match the authenticated account, requested region, and QuakeMesh-FCM-Demo application."
+}
+$env:QM_SNS_PLATFORM_APPLICATION_ARN = $SnsPlatformApplicationArn
 $stateObject = Read-ReviewState
 $state = $null
 if ($stateObject) {
@@ -118,6 +124,7 @@ if ($null -eq $state) {
 }
 
 $newDeployment = !(Test-Path -LiteralPath $state.runtime_config)
+$failureStage = "UNKNOWN_FAILURE"
 try {
     $localDirectory = New-DashboardVariant -Mode local
     Ensure-Process -State $state -Name "local-backend" -Port 8000 -Script (Join-Path $paths.Root "scripts\run_local.ps1") -Arguments @{}
@@ -126,7 +133,8 @@ try {
     Wait-ReviewHttp -Uri "http://127.0.0.1:8080" -TimeoutSeconds 30
 
     if ($newDeployment) {
-        & (Join-Path $paths.Root "aws\scripts\deploy.ps1") -Region $Region -Profile $Profile -SessionId $state.session_id -DurationMinutes $DurationMinutes -AwsCliPath $aws.AwsCli
+        $failureStage = "DEPLOYMENT_FAILURE"
+        & (Join-Path $paths.Root "aws\scripts\deploy.ps1") -Region $Region -Profile $Profile -SessionId $state.session_id -DurationMinutes $DurationMinutes -SnsPlatformApplicationArn $SnsPlatformApplicationArn -AwsCliPath $aws.AwsCli
         if ($LASTEXITCODE -ne 0) { throw "AWS deployment failed." }
     }
     $runtime = Get-Content -LiteralPath $state.runtime_config -Raw | ConvertFrom-Json
@@ -143,28 +151,54 @@ try {
         throw "Owned session is too close to expiry for a safe presentation. Run STOP and START again."
     }
 
+    $diagnosticsDirectory = Join-Path $paths.Root "artifacts\review\diagnostics\$($state.session_id)"
+    $failureStage = "STREAM_READINESS_FAILURE"
+    $streamArguments = @(
+        "aws/scripts/verify_stream_mappings.py", "--config", ([string]$state.runtime_config),
+        "--timeout-seconds", "180", "--diagnostics-dir", $diagnosticsDirectory
+    )
+    if ($Profile) { $streamArguments += @("--profile", $Profile) }
+    & (Join-Path $paths.Root ".venv\Scripts\python.exe") @streamArguments
+    if ($LASTEXITCODE -ne 0) { throw "DynamoDB stream integrations did not become ready." }
+
+    $failureStage = "INGRESS_FAILURE"
     & (Join-Path $paths.Root ".venv\Scripts\python.exe") aws/scripts/smoke_test.py --config $state.runtime_config
     if ($LASTEXITCODE -ne 0) { throw "AWS smoke test failed." }
     $state.smoke = "PASS"; Save-State $state
 
     if ($state.warmup -ne "PASS") {
+        $failureStage = "IOT_PROVISIONING_FAILURE"
         & powershell.exe -NoProfile -ExecutionPolicy Bypass -File `
             (Join-Path $paths.Root "aws\scripts\provision_simulators.ps1") `
             -SessionId $state.session_id -Count $Devices -Region $Region -Profile $Profile
         if ($LASTEXITCODE -ne 0) { throw "IoT simulator provisioning failed." }
+        $failureStage = "MQTT_SIMULATION_FAILURE"
         & powershell.exe -NoProfile -ExecutionPolicy Bypass -File `
             (Join-Path $paths.Root "aws\scripts\run_aws_scenario.ps1") `
             -SessionId $state.session_id -Scenario distributed -Devices $Devices
         if ($LASTEXITCODE -ne 0) { throw "AWS distributed scenario process failed." }
-        & (Join-Path $paths.Root ".venv\Scripts\python.exe") aws/scripts/verify_warmup.py --config $state.runtime_config --minimum-devices 4 --timeout-seconds 120
-        if ($LASTEXITCODE -ne 0) { throw "AWS authoritative warm-up verification failed." }
+        $failureStage = "WARMUP_VERIFICATION_FAILURE"
+        $scenarioTrace = Join-Path (Split-Path -Parent ([string]$state.runtime_config)) "traces\distributed.json"
+        & (Join-Path $paths.Root ".venv\Scripts\python.exe") aws/scripts/verify_warmup.py `
+            --config $state.runtime_config --minimum-devices 4 --timeout-seconds 120 `
+            --trace $scenarioTrace --diagnostics-dir $diagnosticsDirectory
+        if ($LASTEXITCODE -ne 0) {
+            $warmupSummary = Join-Path $diagnosticsDirectory "summary.json"
+            if (Test-Path -LiteralPath $warmupSummary) {
+                $verifiedFailureStage = (Get-Content -LiteralPath $warmupSummary -Raw | ConvertFrom-Json).failure_stage
+                if ($verifiedFailureStage) { $failureStage = [string]$verifiedFailureStage }
+            }
+            throw "$failureStage`: AWS authoritative warm-up verification failed. Diagnostics: $diagnosticsDirectory"
+        }
         $state.warmup = "PASS"; Save-State $state
     }
 
+    $failureStage = "DASHBOARD_START_FAILURE"
     $awsDirectory = New-DashboardVariant -Mode aws -RuntimeConfigPath $state.runtime_config
     Ensure-Process -State $state -Name "aws-dashboard" -Port 8081 -Script (Join-Path $PSScriptRoot "serve_dashboard.ps1") -Arguments @{ Directory = $awsDirectory; Port = 8081 }
     Wait-ReviewHttp -Uri "http://127.0.0.1:8081" -TimeoutSeconds 30
 
+    $failureStage = "ANDROID_BUILD_FAILURE"
     Set-AndroidReviewConfiguration -ApiBaseUrl $runtime.api_base_url -ApiKey $runtime.api_key
     Push-Location (Join-Path $paths.Root "android")
     try {
@@ -175,6 +209,7 @@ try {
     $adbDevices = @(Get-AuthorizedAdbDevices)
     $androidStatus = "NOT CONNECTED - APK READY"
     if ($adbDevices.Count -eq 1) {
+        $failureStage = "ANDROID_INSTALL_FAILURE"
         $apk = Join-Path $paths.Root "android\app\build\outputs\apk\debug\app-debug.apk"
         Invoke-NativeCommandResult -FilePath (Get-Command adb).Source -ArgumentList @("-s", $adbDevices[0], "install", "-r", $apk) | Out-Null
         $androidStatus = "CONNECTED / APK INSTALLED ($($adbDevices[0]))"
@@ -195,7 +230,24 @@ try {
 }
 catch {
     $message = $_.Exception.Message
-    Write-Host "START FAILED: $message" -ForegroundColor Red
+    if ($message -match '^(STREAM_READINESS_FAILURE|INGRESS_FAILURE|CORRELATION_FAILURE|ALERT_DISPATCH_FAILURE|WARMUP_VERIFICATION_FAILURE):') {
+        $failureStage = $Matches[1]
+    }
+    Write-Host "START FAILED [$failureStage]: $message" -ForegroundColor Red
+    if ($state -and (Test-Path -LiteralPath ([string]$state.runtime_config))) {
+        $diagnosticsDirectory = Join-Path $paths.Root "artifacts\review\diagnostics\$($state.session_id)"
+        Write-Warning "Capturing sanitized session diagnostics before teardown: $diagnosticsDirectory"
+        try {
+            $captureArguments = @(
+                "aws/scripts/capture_diagnostics.py", "--config", ([string]$state.runtime_config),
+                "--output", $diagnosticsDirectory
+            )
+            if ($Profile) { $captureArguments += @("--profile", $Profile) }
+            & (Join-Path $paths.Root ".venv\Scripts\python.exe") @captureArguments
+            if ($LASTEXITCODE -ne 0) { Write-Warning "Diagnostic capture was partial (exit $LASTEXITCODE); teardown will continue." }
+        }
+        catch { Write-Warning "Diagnostic capture was partial: $($_.Exception.Message); teardown will continue." }
+    }
     $ownershipPath = Join-Path (Split-Path -Parent ([string]$state.runtime_config)) "ownership.json"
     if ($state.created_by_review -and (Test-Path -LiteralPath $ownershipPath)) {
         Write-Warning "START failed after deployment; attempting exact-session teardown."

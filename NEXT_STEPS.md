@@ -1,6 +1,6 @@
 # QuakeMesh next steps
 
-The V2 local control-plane phase is complete on the current Windows host. The Android V2 API/domain foundation, monitoring interface, local-emulator configuration, alert identity, and ACK client compile into a debug APK and pass Android lint. The Windows review harness completed its real AWS lifecycle matrix in account `101541767123`, region `ap-south-1`: first START, idempotent START reuse, STOP/CLEAN, fresh isolated START, STOP/CLEAN, and already-stopped STOP. Final status reported zero owned QuakeMesh stacks, no active review state, and ports 8000/8080/8081 stopped.
+QuakeMesh V2 is complete as an academic prototype on the current Windows host. Local, dashboard, Android, AWS pipeline, controlled FCM, and deterministic synthetic-evaluation evidence are recorded. Session `qm-20261019-112257-b77a` ended with an independently repeated `CLEAN` audit: zero active QuakeMesh stacks, no active review state, no session-owned SNS endpoint, and ports 8000/8080/8081 stopped. Shared `CDKToolkit` and the reusable enabled SNS platform application remain intentionally retained.
 
 ## Reproduce the local evidence
 
@@ -8,6 +8,7 @@ The V2 local control-plane phase is complete on the current Windows host. The An
 Set-ExecutionPolicy -Scope Process Bypass
 .\scripts\setup.ps1
 .\scripts\validate.ps1
+.\.venv\Scripts\python.exe scripts\run_evaluation.py --output artifacts\evaluation\latest --trials-per-scenario 12 --base-seed 20261019 --publish-dashboard
 .\scripts\demo_local.ps1 -Scenario distributed -Devices 25
 ```
 
@@ -26,11 +27,10 @@ The PowerShell runner now calls the scenario-control API and polls its authorita
 
 ## Next engineering steps
 
-1. Run the Android debug APK on an emulator against local FastAPI at `http://10.0.2.2:8000`; verify heartbeat, trigger, physical provenance, alert polling, and idempotent ACK in SQLite/API views.
-2. Repeat sensor/location monitoring on a physical device using a reachable HTTPS endpoint; record permission and lifecycle evidence.
-3. Add Android instrumentation/accessibility coverage; focused V2 envelope/error/alert JVM tests are now present.
-4. Separately validate automatic expiry cleanup; manual exact-session STOP is already verified and remains primary.
-5. Exercise and record the AWS dashboard ACK interaction in a browser against a live session; live reads and backend ACK routing are implemented, while this lifecycle run verified health/device/event/alert reads through STATUS.
-6. Configure and validate opt-in FCM delivery only after a physical device is available.
+1. Diagnose and separately validate the automatic-expiry path. The scheduled cleanup did not complete on time in the successful session; do not weaken the exact-session ownership guards, and retain manual STOP as primary until fixed and reverified.
+2. Add Android instrumentation, TalkBack/accessibility, process-recreation, and broader device-matrix coverage. The Motorola Android 15 device did not show an automatic heads-up overlay; full-screen intent remains intentionally disabled.
+3. Exercise an authoritative alert ACK from the physical handset and the AWS dashboard in a future explicitly approved live session. The controlled direct FCM test correctly created no authoritative ACK record.
+4. Expand the synthetic evaluation sample and add independently sourced, ethically governed real sensor/seismological datasets before making any claim about real-world detection performance.
+5. Measure performance, concurrency, and cost under a separately approved load plan; the present evidence is an academic-scale functional demonstration.
 
-Keep the following explicitly separate in reports: local verification, Android build/device verification, AWS synthesis, AWS live deployment, and FCM delivery. None implies another.
+Keep local verification, controlled synthetic evaluation, Android device behavior, AWS live processing, FCM receipt, and real-world seismological validity separate in every report. None implies another.

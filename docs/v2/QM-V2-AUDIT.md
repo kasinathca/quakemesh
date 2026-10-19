@@ -1,5 +1,7 @@
 # QuakeMesh V2 forensic audit
 
+> Historical baseline audit. Its preparation-era “unverified” findings are superseded where applicable by the dated live evidence in `QM-V2-AWS-PIPELINE-REPAIR.md`, `QM-V2-COMPLETION-REPORT.md`, and `QM-V2-OFFLINE-EVALUATION-AND-ANDROID-WARNINGS.md`. Automatic expiry remains unresolved.
+
 Audit date: 2026-10-05. Scope: all source, test, schema, PowerShell, dashboard, Android, AWS infrastructure, and current operations files in this checkout.
 
 ## Baseline evidence
