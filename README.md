@@ -5,7 +5,7 @@ Academic cloud-computing project · AWS serverless backend · H3 spatial indexin
 
 > **Important scope statement:** QuakeMesh is an experimental software prototype. A “confirmed event” means the configured cloud corroboration rules were satisfied. It is **not** an official earthquake declaration, does not estimate magnitude or epicentre, and is not validated for life-safety use.
 
-> **V2 engineering status:** the local control plane, real-H3 detector, research evaluation, React dashboard, Android client, and session-scoped AWS pipeline have been verified on the current Windows host. Live session `qm-20261019-112257-b77a` proved IoT ingestion, DynamoDB Streams correlation, one authoritative scenario event, 17 simulator alerts, physical heartbeat/H3 registration, an enabled session-owned SNS endpoint, controlled FCM receipt, and provenance-isolated physical motion evidence. Its final 96-resource inventory audit is `CLEAN`. Android 15 did not show an automatic heads-up overlay, and full-screen intent is intentionally not requested. Automatic expiry did not complete at its scheduled time; guarded manual STOP remains the verified cleanup path. See [`docs/v2/QM-V2-AWS-PIPELINE-REPAIR.md`](docs/v2/QM-V2-AWS-PIPELINE-REPAIR.md) and [`docs/v2/QM-V2-OFFLINE-EVALUATION-AND-ANDROID-WARNINGS.md`](docs/v2/QM-V2-OFFLINE-EVALUATION-AND-ANDROID-WARNINGS.md).
+> **V2 engineering status:** the local control plane, real-H3 detector, React dashboard, Android client, and session-scoped AWS pipeline have been verified on the current Windows host. The historical 48-trial benchmark is preserved, and a separate challenging research benchmark plus recorded smartphone human-activity gate evaluation are implemented. A secure operator-only controlled-notification lifecycle is locally validated but still requires a new authorized AWS/physical-phone run. Live session `qm-20261019-112257-b77a` remains the prior cloud evidence; its final 96-resource inventory audit is `CLEAN`. Android 15 did not show an automatic heads-up overlay, and full-screen intent is intentionally not requested. Automatic expiry did not complete at its scheduled time; guarded manual STOP remains the verified cleanup path. See [`docs/v2/QM-V2-RESEARCH-EVALUATION.md`](docs/v2/QM-V2-RESEARCH-EVALUATION.md), [`docs/v2/QM-V2-AWS-PIPELINE-REPAIR.md`](docs/v2/QM-V2-AWS-PIPELINE-REPAIR.md), and [`docs/v2/QM-V2-OFFLINE-EVALUATION-AND-ANDROID-WARNINGS.md`](docs/v2/QM-V2-OFFLINE-EVALUATION-AND-ANDROID-WARNINGS.md).
 
 ## What is implemented
 
@@ -364,9 +364,11 @@ Reproduce the controlled synthetic evaluation without AWS:
 
 ```powershell
 .\.venv\Scripts\python.exe scripts\run_evaluation.py --output artifacts\evaluation\latest --trials-per-scenario 12 --base-seed 20261019 --publish-dashboard
+.\.venv\Scripts\python.exe scripts\run_research_evaluation.py --output results\research-evaluation --trials-per-scenario 16 --base-seed 20261022 --publish-dashboard
+.\.venv\Scripts\python.exe scripts\run_recorded_evaluation.py --download --max-windows-per-split 1000
 ```
 
-The checked-in report-ready snapshot is under `results/offline-evaluation/`. It is a software simulation result, not real-world earthquake-detection accuracy.
+The historical snapshot is under `results/offline-evaluation/`; expanded outputs are under `results/research-evaluation/` and `results/recorded-negative-evaluation/`. Synthetic results measure software behavior, while UCI HAR measures the single-device motion gate on authentic negative activity windows. Neither is real-world earthquake-detection accuracy.
 
 ## Documentation
 

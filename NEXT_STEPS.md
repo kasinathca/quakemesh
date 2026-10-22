@@ -30,7 +30,9 @@ The PowerShell runner now calls the scenario-control API and polls its authorita
 1. Diagnose and separately validate the automatic-expiry path. The scheduled cleanup did not complete on time in the successful session; do not weaken the exact-session ownership guards, and retain manual STOP as primary until fixed and reverified.
 2. Add Android instrumentation, TalkBack/accessibility, process-recreation, and broader device-matrix coverage. The Motorola Android 15 device did not show an automatic heads-up overlay; full-screen intent remains intentionally disabled.
 3. Exercise an authoritative alert ACK from the physical handset and the AWS dashboard in a future explicitly approved live session. The controlled direct FCM test correctly created no authoritative ACK record.
-4. Expand the synthetic evaluation sample and add independently sourced, ethically governed real sensor/seismological datasets before making any claim about real-world detection performance.
-5. Measure performance, concurrency, and cost under a separately approved load plan; the present evidence is an academic-scale functional demonstration.
+4. Run the new controlled-notification API in an explicitly approved AWS session and verify `SNS_ACCEPTED → FCM_RECEIVED → NOTIFICATION_POSTED → OPENED` with USB disconnected. The implementation is locally validated, but this revised flow has not yet been exercised live.
+5. Re-run automatic expiry with the expanded 600 s cleanup budget and retain Scheduler/Lambda evidence. The timeout change is an offline hardening, not proof that scheduled expiry is repaired.
+6. Obtain appropriately licensed raw earthquake handset waveforms before making any real-world sensitivity claim. The integrated UCI HAR evaluation covers authentic human-activity negatives only; public MyShake parametric data is not a raw triaxial substitute.
+7. Measure performance, concurrency, cloud latency and cost under a separately approved load plan; the present new evidence remains offline/local.
 
 Keep local verification, controlled synthetic evaluation, Android device behavior, AWS live processing, FCM receipt, and real-world seismological validity separate in every report. None implies another.

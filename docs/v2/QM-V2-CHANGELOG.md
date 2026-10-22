@@ -1,5 +1,16 @@
 # QuakeMesh V2 changelog
 
+## 2026-10-22 — research evaluation and controlled wireless notification path
+
+- Added a deterministic 320-trial benchmark around the production correlation service and real H3, with 20 positive/negative scenario families, a fixed 60-trial held-out partition, one-to-one event matching, uncertainty intervals, error breakdowns, machine-readable results, and six robustness figures.
+- Measured aggregate TP=86, TN=151, FP=25, FN=58, F1=0.6745, balanced accuracy=0.7276, and MCC=0.4758; held-out TP=18, TN=28, FP=5, FN=9, F1=0.7200, balanced accuracy=0.7576, and MCC=0.5271. These are controlled synthetic software results, not earthquake-accuracy claims.
+- Added an explicit UCI HAR adapter using authentic raw smartphone accelerometer windows and the production Android motion feature/gate logic. On the 1,000-window subject-disjoint held-out partition, 469 windows passed the local motion gate; this is a motion-gate rate, not an event-level false-alert rate.
+- Rebuilt the Evaluation dashboard around the tracked baseline and research datasets, with filters, confidence intervals, confusion matrices, operational metrics, robustness plots, error inspection, and CSV/JSON/PNG/SVG exports.
+- Added an operator-only, rate-limited controlled-test endpoint with a distinct Secrets Manager credential, server-side endpoint resolution, stable test IDs, exact device/session binding, data-only FCM, and received/posted/opened/failed receipts.
+- Added Android controlled-test receipt telemetry and exact non-authoritative labeling without adding full-screen intents or weakening authoritative-alert behavior.
+- Increased the expiry cleanup Lambda timeout and memory after the prior live missed-expiry evidence; the revised path is synthesis- and test-verified but remains unverified in a live automatic-expiry run.
+- Completed local validation: 108 Python tests, Ruff, secret/schema audits, CDK synthesis, 36 Android Gradle tasks, seven dashboard unit tests, production build, and three Playwright tests. No AWS resources were deployed and no paid cloud action was performed.
+
 ## 2026-10-19 — offline research evaluation and Android warning UX
 
 - Added a deterministic independent-trial evaluator around the actual local detector and real H3, with external-only truth labels, loss, jitter, device-count, timing, and geographic variation.
