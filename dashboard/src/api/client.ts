@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import type {
   AlertRecord,
+  ControlledTestRecord,
   DeviceRecord,
   EventRecord,
   Health,
@@ -63,8 +64,8 @@ export class ApiProblem extends Error {
   }
 }
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const apiKey = window.QUAKEMESH_CONFIG?.apiKey;
+async function request<T>(path: string, init?: RequestInit, credential?: string): Promise<T> {
+  const apiKey = credential ?? window.QUAKEMESH_CONFIG?.apiKey;
   const headers = new Headers(init?.headers);
   headers.set("Content-Type", "application/json");
   if (apiKey && init?.method && init.method !== "GET") headers.set("x-api-key", apiKey);
@@ -116,5 +117,14 @@ export const api = {
         method: "POST",
         body: JSON.stringify({ acknowledgement_source: "dashboard", device_id: deviceId }),
       },
+    ),
+  controlledTest: (deviceId: string, testMessageId: string, operatorCredential: string) =>
+    request<{ test: ControlledTestRecord; idempotent_replay: boolean }>(
+      "/v1/controlled-tests",
+      {
+        method: "POST",
+        body: JSON.stringify({ device_id: deviceId, test_message_id: testMessageId }),
+      },
+      operatorCredential,
     ),
 };

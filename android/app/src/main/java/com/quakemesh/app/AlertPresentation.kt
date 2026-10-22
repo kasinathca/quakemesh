@@ -29,7 +29,7 @@ object AlertPresentationPolicy {
             provenanceLabel = when (kind) {
                 AlertKind.AUTHORITATIVE_PHYSICAL -> "Physical-device evidence · cloud corroborated"
                 AlertKind.AUTHORITATIVE_SIMULATION -> "Synthetic scenario evidence · cloud corroborated"
-                AlertKind.CONTROLLED_TEST -> "LOCAL CONTROLLED PREVIEW · no earthquake claim"
+                AlertKind.CONTROLLED_TEST -> "CONTROLLED TEST · NOT AN EARTHQUAKE ALERT"
                 AlertKind.LEGACY -> "Legacy message · authority not established"
             },
             headsUp = true,

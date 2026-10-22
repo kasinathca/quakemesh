@@ -98,8 +98,8 @@ object NotificationHelper {
         val toneLabel = if (useWarningTone) "warning-channel tone" else "demonstration-channel tone"
         val notification = warningNotification(
             context,
-            "CONTROLLED QuakeMesh preview",
-            "Local $toneLabel test — not an earthquake alert.",
+            "CONTROLLED TEST — NOT AN EARTHQUAKE ALERT",
+            "Local $toneLabel delivery check. This is not an earthquake warning.",
             alert,
             if (useWarningTone) ALERT_CHANNEL else DEMO_CHANNEL,
         )

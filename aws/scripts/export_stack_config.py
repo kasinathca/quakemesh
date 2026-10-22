@@ -26,6 +26,9 @@ def main() -> None:
     if outputs.get("SessionId") != args.session_id:
         raise RuntimeError("stack output does not match requested session")
     key = gateway.get_api_key(apiKey=outputs["ApiKeyId"], includeValue=True)["value"]
+    operator_key = gateway.get_api_key(
+        apiKey=outputs["OperatorApiKeyId"], includeValue=True
+    )["value"]
     config = {
         "schema_version": "2.0",
         "stack_name": args.stack_name,
@@ -39,6 +42,7 @@ def main() -> None:
         "exported_at": datetime.now(timezone.utc).isoformat(),
         "api_base_url": outputs["ApiBaseUrl"],
         "api_key": key,
+        "operator_api_key": operator_key,
         "iot_endpoint": iot.describe_endpoint(endpointType="iot:Data-ATS")["endpointAddress"],
         "device_policy_name": outputs["DevicePolicyName"],
         "tables": {

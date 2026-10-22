@@ -22,7 +22,10 @@ def test_iot_policy_is_thing_scoped():
 
 def test_https_writes_require_api_key():
     s = (ROOT / "aws/infrastructure/stack.py").read_text()
-    assert s.count("api_key_required=True") == 3
+    assert s.count("api_key_required=True") == 5
+    assert "OperatorApiKey" in s
+    assert 'api_fn.add_environment("QM_OPERATOR_SECRET_ARN", operator_secret.secret_arn)' in s
+    assert "operator_secret.grant_read(api_fn)" in s
 
 
 def test_aws_v2_stack_is_session_owned_and_destroyable():
@@ -34,6 +37,7 @@ def test_aws_v2_stack_is_session_owned_and_destroyable():
     assert "schedule_expression=f\"at({expires_at.removesuffix('Z')})\"" in s
     assert '"cloudformation:DeleteStack"' in s
     assert '"iot:ListThings"' in s
+    assert 'cleanup = function("CleanupFn", "aws.lambdas.cleanup.handler", 600, 512)' in s
 
 
 def test_aws_v2_api_and_provenance_contracts_are_present():

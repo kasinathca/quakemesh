@@ -51,6 +51,7 @@ object MonitoringState {
                 .put("warning_area_h3", org.json.JSONArray(alert.warningAreaH3))
                 .put("authoritative_record", alert.authoritativeRecord)
                 .put("controlled_test", alert.controlledTest)
+                .put("test_message_id", alert.testMessageId)
                 .toString())
             .apply()
         update(context) { it.copy(latestAlert = alert) }

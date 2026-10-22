@@ -155,12 +155,18 @@ export function useControlPlane() {
       await refresh();
       return result;
     },
+    sendControlledTest: async (deviceId: string, testMessageId: string, operatorCredential: string) => {
+      const result = await api.controlledTest(deviceId, testMessageId, operatorCredential);
+      await refresh();
+      return result;
+    },
     capabilities: {
       scenarioControl: !isCloud,
       scenarioTelemetry: !isCloud,
       reset: !isCloud,
       export: !isCloud,
       cloudReads: isCloud,
+      controlledNotifications: isCloud,
     },
     environment: {
       label: dashboardEnvironment.label ?? (isCloud ? "AWS V2 Demo" : "Local V2"),

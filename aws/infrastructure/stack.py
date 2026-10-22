@@ -20,6 +20,7 @@ from aws_cdk import (
     aws_lambda_event_sources as lambda_events,
     aws_logs as logs,
     aws_scheduler as scheduler,
+    aws_secretsmanager as secretsmanager,
 )
 from constructs import Construct
 
@@ -198,7 +199,10 @@ class QuakeMeshStack(Stack):
         )
         dispatcher = function("DispatcherFn", "aws.lambdas.dispatcher.handler", 30, 384)
         resolver = function("ResolverFn", "aws.lambdas.resolver.handler", 20, 256)
-        cleanup = function("CleanupFn", "aws.lambdas.cleanup.handler", 60, 256)
+        # Expiry cleanup performs several guarded IoT API calls per simulator.
+        # The previous 60-second budget was not defensible for a 25-device fleet
+        # and is the leading offline explanation for the missed live expiry.
+        cleanup = function("CleanupFn", "aws.lambdas.cleanup.handler", 600, 512)
         cleanup.add_environment("QM_STACK_NAME", self.stack_name)
         cleanup.add_environment("QM_IOT_POLICY_NAME", policy_name)
 
@@ -307,9 +311,10 @@ class QuakeMeshStack(Stack):
                         resources=[platform_arn, endpoint_arn],
                     )
                 )
-            dispatcher.add_to_role_policy(
-                iam.PolicyStatement(actions=["sns:Publish"], resources=[endpoint_arn])
-            )
+            for fn in (dispatcher, api_fn):
+                fn.add_to_role_policy(
+                    iam.PolicyStatement(actions=["sns:Publish"], resources=[endpoint_arn])
+                )
             cleanup.add_to_role_policy(
                 iam.PolicyStatement(
                     actions=["sns:ListEndpointsByPlatformApplication"],
@@ -439,6 +444,11 @@ class QuakeMeshStack(Stack):
         alerts.add_resource("{alert_id}").add_resource("ack").add_method(
             "POST", integration, api_key_required=True
         )
+        controlled_tests = v1.add_resource("controlled-tests")
+        controlled_tests.add_method("POST", integration, api_key_required=True)
+        controlled_tests.add_resource("{test_message_id}").add_resource("receipts").add_method(
+            "POST", integration, api_key_required=True
+        )
         api_key = api.add_api_key(
             "DemoApiKey", api_key_name=f"QuakeMeshV2-{session_id}-WriteKey"
         )
@@ -450,6 +460,31 @@ class QuakeMeshStack(Stack):
         )
         plan.add_api_key(api_key)
         plan.add_api_stage(stage=api.deployment_stage)
+        operator_secret = secretsmanager.Secret(
+            self,
+            "OperatorCredential",
+            description=f"Ephemeral controlled-notification operator credential for {session_id}",
+            generate_secret_string=secretsmanager.SecretStringGenerator(
+                password_length=40,
+                exclude_punctuation=True,
+            ),
+            removal_policy=RemovalPolicy.DESTROY,
+        )
+        operator_key = api.add_api_key(
+            "OperatorApiKey",
+            api_key_name=f"QuakeMeshV2-{session_id}-OperatorKey",
+            value=operator_secret.secret_value.unsafe_unwrap(),
+        )
+        operator_plan = api.add_usage_plan(
+            "OperatorUsagePlan",
+            name=f"QuakeMeshV2-{session_id}-OperatorPlan",
+            throttle=apigw.ThrottleSettings(rate_limit=0.2, burst_limit=1),
+            quota=apigw.QuotaSettings(limit=500, period=apigw.Period.MONTH),
+        )
+        operator_plan.add_api_key(operator_key)
+        operator_plan.add_api_stage(stage=api.deployment_stage)
+        api_fn.add_environment("QM_OPERATOR_SECRET_ARN", operator_secret.secret_arn)
+        operator_secret.grant_read(api_fn)
 
         events.Rule(
             self,
@@ -495,6 +530,7 @@ class QuakeMeshStack(Stack):
             "ExpiresAt": expires_at,
             "ApiBaseUrl": api.url,
             "ApiKeyId": api_key.key_id,
+            "OperatorApiKeyId": operator_key.key_id,
             "DevicePolicyName": policy.policy_name or "",
             "DeviceTableName": device.table_name,
             "EvidenceTableName": evidence.table_name,

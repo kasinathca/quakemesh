@@ -91,3 +91,9 @@ Cancellation is intentionally absent: the current simulator cannot guarantee saf
 ```
 
 SSE `id` equals the monotonic stream sequence. Browsers reconnect with `Last-Event-ID`; clients may also use `?after=<sequence>`. REST run/event/alert endpoints are the recovery snapshot after disconnect or a suspected gap.
+
+## AWS controlled-notification extension
+
+`POST /v1/controlled-tests` accepts `{device_id, test_message_id}` only with the separate session operator API key. API Gateway requires a key and Lambda verifies that its resolved API-key ID equals the generated operator key ID; the Android/demo key cannot initiate tests. The stable test ID is 8–80 URL-safe characters. The service resolves the SNS endpoint from a recent, physical, exact-session device record and never accepts or returns a target ARN or Firebase token. Idempotent replay returns the existing record; a different device using the same ID conflicts; new sends are limited to one per device per 30 seconds.
+
+`POST /v1/controlled-tests/{test_message_id}/receipts` accepts `{device_id, state}` for `FCM_RECEIVED`, `NOTIFICATION_POSTED`, `OPENED`, or `FAILED`. The ordinary device API key is sufficient only after exact test/session/device binding is verified. These transitions are controlled-test telemetry, not earthquake-alert ACKs. Records remain `authoritative_record=false`, `controlled_test=true`, and use event ID `CONTROLLED-TEST`.

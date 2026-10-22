@@ -19,6 +19,9 @@ class WarningActivity : Activity() {
         super.onCreate(savedInstanceState)
         val alert = fromIntent(intent)
         val presentation = AlertPresentationPolicy.forAlert(alert)
+        if (alert.controlledTest && !alert.testMessageId.isNullOrBlank() && !alert.deviceId.isNullOrBlank()) {
+            ApiClient.controlledTestReceipt(alert.testMessageId, alert.deviceId, "OPENED")
+        }
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(24), dp(28), dp(24), dp(32))
@@ -65,6 +68,7 @@ class WarningActivity : Activity() {
         acknowledgedAtMs = null, acknowledgementSource = null, provenanceType = intent.getStringExtra(EXTRA_PROVENANCE),
         warningAreaH3 = intent.getStringArrayListExtra(EXTRA_WARNING_AREA).orEmpty(),
         authoritativeRecord = intent.getBooleanExtra(EXTRA_AUTHORITATIVE, true), controlledTest = intent.getBooleanExtra(EXTRA_CONTROLLED, false),
+        testMessageId = intent.getStringExtra(EXTRA_TEST_MESSAGE_ID),
     )
 
     private fun dp(value: Int) = (value * resources.displayMetrics.density).toInt()
@@ -75,12 +79,14 @@ class WarningActivity : Activity() {
         const val EXTRA_STATUS = "warning_status"; const val EXTRA_DEVICE_ID = "warning_device_id"; const val EXTRA_CREATED_AT = "warning_created_at"
         const val EXTRA_PROVENANCE = "warning_provenance"; const val EXTRA_WARNING_AREA = "warning_area_h3"; const val EXTRA_AUTHORITATIVE = "warning_authoritative"
         const val EXTRA_CONTROLLED = "warning_controlled"; const val EXTRA_TITLE = "warning_title"; const val EXTRA_BODY = "warning_body"
+        const val EXTRA_TEST_MESSAGE_ID = "warning_test_message_id"
 
         fun intent(context: Context, alert: AlertRecord, title: String, body: String) = Intent(context, WarningActivity::class.java)
             .putExtra(EXTRA_ALERT_ID, alert.alertId).putExtra(EXTRA_EVENT_ID, alert.eventId).putExtra(EXTRA_EVENT_VERSION, alert.eventVersion)
             .putExtra(EXTRA_STATUS, alert.status).putExtra(EXTRA_DEVICE_ID, alert.deviceId).putExtra(EXTRA_CREATED_AT, alert.createdAtMs)
             .putExtra(EXTRA_PROVENANCE, alert.provenanceType).putStringArrayListExtra(EXTRA_WARNING_AREA, ArrayList(alert.warningAreaH3))
             .putExtra(EXTRA_AUTHORITATIVE, alert.authoritativeRecord).putExtra(EXTRA_CONTROLLED, alert.controlledTest)
+            .putExtra(EXTRA_TEST_MESSAGE_ID, alert.testMessageId)
             .putExtra(EXTRA_TITLE, title).putExtra(EXTRA_BODY, body)
     }
 }

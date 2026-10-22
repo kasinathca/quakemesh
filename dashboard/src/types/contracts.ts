@@ -118,6 +118,26 @@ export interface DeviceRecord {
   transport: string;
   provenance_type: string;
   scenario_run_id: string | null;
+  online?: boolean;
+  notification_capable?: boolean;
+}
+
+export interface ControlledTestRecord {
+  alert_id: string;
+  event_id: "CONTROLLED-TEST";
+  device_id: string;
+  test_message_id: string;
+  status: "REQUESTED" | "SNS_ACCEPTED" | "FCM_RECEIVED" | "NOTIFICATION_POSTED" | "OPENED" | "FAILED";
+  requested_at_ms: number;
+  sns_accepted_at_ms?: number;
+  fcm_received_at_ms?: number;
+  notification_posted_at_ms?: number;
+  opened_at_ms?: number;
+  failed_at_ms?: number;
+  failure_detail?: string;
+  message_label: string;
+  controlled_test: true;
+  authoritative_record: false;
 }
 
 export interface AlertRecord {

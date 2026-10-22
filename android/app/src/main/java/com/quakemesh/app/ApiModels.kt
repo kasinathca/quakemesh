@@ -38,6 +38,7 @@ data class AlertRecord(
     val warningAreaH3: List<String> = emptyList(),
     val authoritativeRecord: Boolean = true,
     val controlledTest: Boolean = false,
+    val testMessageId: String? = null,
 )
 
 data class AcknowledgementReceipt(
@@ -102,6 +103,7 @@ internal object ApiJson {
         } ?: emptyList(),
         authoritativeRecord = value.optBoolean("authoritative_record", true),
         controlledTest = value.optBoolean("controlled_test", false),
+        testMessageId = value.optString("test_message_id").ifBlank { null },
     )
 
     private fun JSONObject.optLongOrNull(key: String): Long? =

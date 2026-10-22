@@ -88,4 +88,23 @@ class ApiModelsTest {
         assertEquals(1700000005000, receipt.alert.acknowledgedAtMs)
         assertEquals("android", receipt.alert.acknowledgementSource)
     }
+
+    @Test
+    fun controlledTestRecordRemainsNonAuthoritativeAndKeepsStableMessageId() {
+        val alert = ApiJson.alert(JSONObject("""{
+            "alert_id":"controlled:session-1:test-1234",
+            "event_id":"CONTROLLED-TEST",
+            "event_version":1,
+            "status":"FCM_RECEIVED",
+            "device_id":"device-2",
+            "created_at_ms":1700000000000,
+            "controlled_test":true,
+            "authoritative_record":false,
+            "test_message_id":"test-1234"
+        }""".trimIndent()))
+        assertTrue(alert.controlledTest)
+        assertFalse(alert.authoritativeRecord)
+        assertEquals("test-1234", alert.testMessageId)
+        assertEquals(AlertKind.CONTROLLED_TEST, AlertPresentationPolicy.classify(alert))
+    }
 }

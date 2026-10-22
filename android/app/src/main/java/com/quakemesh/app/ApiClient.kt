@@ -58,6 +58,19 @@ object ApiClient {
         request("POST", "/v1/alerts/$encodedId/ack", body, ApiJson::acknowledgement, callback)
     }
 
+    fun controlledTestReceipt(
+        testMessageId: String,
+        deviceId: String,
+        state: String,
+        callback: (ApiResult<AlertRecord>) -> Unit = {},
+    ) {
+        val encodedId = URLEncoder.encode(testMessageId, StandardCharsets.UTF_8.toString())
+        val body = JSONObject().put("device_id", deviceId).put("state", state)
+        request("POST", "/v1/controlled-tests/$encodedId/receipts", body, { data ->
+            ApiJson.alert(data.getJSONObject("test"))
+        }, callback)
+    }
+
     private fun observation(deviceId: String, seq: Long, latitude: Double, longitude: Double) =
         JSONObject()
             .put("schema_version", "1.0")

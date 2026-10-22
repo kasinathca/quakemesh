@@ -182,6 +182,11 @@ def main() -> int:
         "AWS::IoT::Policy": ("iot", lambda value: iot.get_policy(policyName=value), None),
         "AWS::CloudWatch::Alarm": ("cloudwatch", lambda value: client("cloudwatch").describe_alarms(AlarmNames=[value]), lambda response: not response.get("MetricAlarms") and not response.get("CompositeAlarms")),
         "AWS::IAM::Role": ("iam", lambda value: client("iam").get_role(RoleName=value), None),
+        "AWS::SecretsManager::Secret": (
+            "secretsmanager",
+            lambda value: client("secretsmanager").describe_secret(SecretId=value),
+            lambda response: bool(response.get("DeletedDate")),
+        ),
     }
     type_counts: dict[str, int] = {}
     for resource in inventory.get("resources", []):

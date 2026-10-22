@@ -23,3 +23,9 @@ Layouts support compact portrait, handset landscape, and a larger window. Text s
 The implemented single-screen status surface is the first final-architecture checkpoint. The planned destination-level navigation, durable multi-alert history, footprint summary, responsive large-window layouts, and formal accessibility validation remain future increments rather than being falsely presented as complete.
 
 Controlled live FCM receipt is verified for the named physical device and session documented in `QM-V2-AWS-PIPELINE-REPAIR.md`. This does not prove delivery reliability across devices or operating conditions, and the controlled message had no authoritative alert record, so ACK was correctly not generated.
+
+## Controlled wireless telemetry extension — 2026-10-22
+
+Data-only FCM messages of type `QUAKEMESH_CONTROLLED_TEST` are now parsed as non-authoritative controlled tests. The app reports `FCM_RECEIVED` when the Firebase callback runs, `NOTIFICATION_POSTED` after submitting the notification to Android, and `OPENED` when the tap destination starts. Receipts carry the stable test-message ID and physical device ID to the current session API. The visible title is exactly **CONTROLLED TEST — NOT AN EARTHQUAKE ALERT**. The controlled channel, stable delivery deduplication, notification permission, tap navigation, and no-full-screen policy remain intact.
+
+JVM tests and Android lint/build validate the payload model and application code locally. No new live SNS/FCM send or USB-disconnected handset run was performed for this revision; those states must remain unverified until an authorized AWS session and physical phone are available.
