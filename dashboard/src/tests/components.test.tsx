@@ -27,8 +27,8 @@ describe("operations components", () => {
     const trials = [{ trial_id: "distributed-001", scenario: "distributed", seed: 7, truth_positive: true, predicted_positive: true, outcome: "TP", packet_loss_fraction: 0, jitter_ms: 0, devices: 12, confirmation_latency_ms: 240, alert_target_latency_ms: 240, transport_delivery_success_ratio: 1, notification_receipt_status: "NOT_OBSERVED_OFFLINE", failure: null }];
     vi.spyOn(globalThis, "fetch").mockImplementation((input) => Promise.resolve(new Response(JSON.stringify(String(input).includes("trials.json") ? trials : summary))));
     render(<EvaluationView />);
-    expect(await screen.findByText(/Offline synthetic simulation results/)).toBeInTheDocument();
-    expect(screen.getByText(/Actual FCM notification receipt is/)).toBeInTheDocument();
+    expect(await screen.findByText(/OFFLINE SYNTHETIC SIMULATION EVALUATION/i)).toBeInTheDocument();
+    expect(screen.getByText(/FCM receipt remains distinct from SNS acceptance/)).toBeInTheDocument();
     vi.restoreAllMocks();
   });
 });

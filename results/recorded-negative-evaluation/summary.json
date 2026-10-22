@@ -1,0 +1,141 @@
+{
+  "archive_sha256": "c00b803081a5c797cd5e4b83700a9810b38d53d9d84e01917e090e1fdbc81031",
+  "by_activity": {
+    "LAYING": {
+      "false_positive_rate": 0.011527377521613832,
+      "false_positive_rate_ci95": [
+        0.004491652283325834,
+        0.029259942697773544
+      ],
+      "false_positive_windows": 4,
+      "false_triggers_per_observation_hour": 16.21037463976945,
+      "observation_hours": 0.24675555555555556,
+      "true_negative_windows": 343,
+      "windows": 347
+    },
+    "SITTING": {
+      "false_positive_rate": 0.0,
+      "false_positive_rate_ci95": [
+        0.0,
+        0.012124230316929803
+      ],
+      "false_positive_windows": 0,
+      "false_triggers_per_observation_hour": 0.0,
+      "observation_hours": 0.22257777777777776,
+      "true_negative_windows": 313,
+      "windows": 313
+    },
+    "STANDING": {
+      "false_positive_rate": 0.0,
+      "false_positive_rate_ci95": [
+        0.0,
+        0.010616414252844672
+      ],
+      "false_positive_windows": 0,
+      "false_triggers_per_observation_hour": 0.0,
+      "observation_hours": 0.2545777777777778,
+      "true_negative_windows": 358,
+      "windows": 358
+    },
+    "WALKING": {
+      "false_positive_rate": 1.0,
+      "false_positive_rate_ci95": [
+        0.9903684565991391,
+        1.0
+      ],
+      "false_positive_windows": 395,
+      "false_triggers_per_observation_hour": 1406.25,
+      "observation_hours": 0.2808888888888889,
+      "true_negative_windows": 0,
+      "windows": 395
+    },
+    "WALKING_DOWNSTAIRS": {
+      "false_positive_rate": 1.0,
+      "false_positive_rate_ci95": [
+        0.9864183318926757,
+        1.0
+      ],
+      "false_positive_windows": 279,
+      "false_triggers_per_observation_hour": 1406.25,
+      "observation_hours": 0.1984,
+      "true_negative_windows": 0,
+      "windows": 279
+    },
+    "WALKING_UPSTAIRS": {
+      "false_positive_rate": 1.0,
+      "false_positive_rate_ci95": [
+        0.9876813723382979,
+        1.0
+      ],
+      "false_positive_windows": 308,
+      "false_triggers_per_observation_hour": 1406.25,
+      "observation_hours": 0.21902222222222223,
+      "true_negative_windows": 0,
+      "windows": 308
+    }
+  },
+  "dataset_id": "uci-har-smartphone-adl",
+  "detector": {
+    "event_merge_window_ms": 20000,
+    "event_resolve_after_ms": 30000,
+    "evidence_ttl_seconds": 600,
+    "evidence_window_ms": 8000,
+    "h3_correlation_resolution": 7,
+    "h3_device_resolution": 9,
+    "max_clock_skew_ms": 120000,
+    "max_cluster_grid_distance": 6,
+    "min_devices": 4,
+    "min_distinct_cells": 3,
+    "motion_peak_threshold": 1.8,
+    "motion_rms_threshold": 0.75,
+    "warning_ring_k": 1
+  },
+  "development": {
+    "false_positive_rate": 0.517,
+    "false_positive_rate_ci95": [
+      0.48602235996108767,
+      0.5478475302504034
+    ],
+    "false_positive_windows": 517,
+    "false_triggers_per_observation_hour": 727.03125,
+    "observation_hours": 0.7111111111111111,
+    "true_negative_windows": 483,
+    "windows": 1000
+  },
+  "doi": "10.24432/C54S4K",
+  "generated_at": "2026-10-22T15:19:10.263469+00:00",
+  "held_out": {
+    "false_positive_rate": 0.469,
+    "false_positive_rate_ci95": [
+      0.438247507417386,
+      0.49998975160871834
+    ],
+    "false_positive_windows": 469,
+    "false_triggers_per_observation_hour": 659.53125,
+    "observation_hours": 0.7111111111111111,
+    "true_negative_windows": 531,
+    "windows": 1000
+  },
+  "label_method": "video-labeled activities of daily living; every window is a negative earthquake case",
+  "license": "CC BY 4.0",
+  "orientation_handling": "vector magnitude makes the QuakeMesh feature extraction orientation invariant",
+  "overall": {
+    "false_positive_rate": 0.493,
+    "false_positive_rate_ci95": [
+      0.4711235114948243,
+      0.5149033271671131
+    ],
+    "false_positive_windows": 986,
+    "false_triggers_per_observation_hour": 693.28125,
+    "observation_hours": 1.4222222222222223,
+    "true_negative_windows": 1014,
+    "windows": 2000
+  },
+  "preprocessing": "128-sample source windows; total_acc x/y/z multiplied by 9.80665 then production extract_motion_features and passes_motion_gate",
+  "result_kind": "RECORDED_NEGATIVE_MOTION_GATE_EVALUATION",
+  "sampling_rate_hz": 50,
+  "schema_version": "1.0",
+  "scope": "single-device motion-gate testing only; recordings are not synchronized network events and are not used for event-level earthquake accuracy",
+  "source": "https://archive.ics.uci.edu/static/public/240/human+activity+recognition+using+smartphones.zip",
+  "units": "source total acceleration in standard gravity converted to m/s^2"
+}

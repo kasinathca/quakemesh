@@ -115,7 +115,8 @@ tbody tr:hover, .selected-row { background: #f3f6fb; }
 .evaluation-actions { margin-top: 0; }
 .evaluation-filters { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
 .evaluation-filters label, .evaluation-filters > div { display: grid; gap: 6px; color: var(--muted); font-size: 11px; }
-.evaluation-filters select { min-width: 0; height: 36px; border: 1px solid #b9c2cf; border-radius: 3px; padding: 6px 8px; background: #fff; color: #1d2430; }
+.evaluation-filters select, .evaluation-filters input { min-width: 0; height: 36px; border: 1px solid #b9c2cf; border-radius: 3px; padding: 6px 8px; background: #fff; color: #1d2430; }
+.evaluation-plot { min-width: 0; display: grid; gap: 10px; }
 .evaluation-filters strong { color: #1d2430; font-size: 24px; }
 .confusion-grid { display: grid; grid-template-columns: 82px repeat(2, minmax(110px, 1fr)); gap: 6px; align-items: stretch; text-align: center; }
 .confusion-grid > strong { align-self: center; font-size: 12px; color: var(--muted); }

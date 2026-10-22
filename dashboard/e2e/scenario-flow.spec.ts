@@ -75,3 +75,14 @@ test("supported viewports do not introduce page-level horizontal overflow", asyn
   }
   await page.screenshot({ path: "../artifacts/e2e/narrow-overview.png", fullPage: true });
 });
+
+test("evaluation view preserves baseline and renders computed research artifacts", async ({ page }) => {
+  await page.goto("/#evaluation");
+  await expect(page.getByText("320 completed trials")).toBeVisible();
+  await expect(page.getByText("F1 versus packet loss")).toBeVisible();
+  await expect(page.getByText("P95 detection latency versus jitter")).toBeVisible();
+  await expect(page.getByLabel("Event-level confusion matrix").getByText("86", { exact: true })).toBeVisible();
+  await page.screenshot({ path: "../artifacts/e2e/research-evaluation.png", fullPage: true });
+  await page.getByLabel("Dataset").selectOption("baseline");
+  await expect(page.getByText("48 completed trials")).toBeVisible();
+});
