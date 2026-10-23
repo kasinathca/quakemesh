@@ -1,5 +1,15 @@
 # QuakeMesh V2 changelog
 
+## 2026-10-24 — final interactive AWS/Android review release
+
+- Added phone-centered AWS Scenario Lab execution for distributed, isolated, same-cell, degraded-network, and false-positive demonstrations with real run/stage telemetry and safe selection reset.
+- Kept the physical phone as a coarse H3 reference and explicit drill recipient while virtual devices remained the only synthetic evidence sources.
+- Added authoritative SNS/FCM drill delivery, full-screen locked-device warning presentation, bounded alarm/TTS/vibration attention service, receipts, Stop Alert Sound, Android acknowledgement, and duplicate suppression.
+- Verified the USB-disconnected final run through cloud receipts and ACK; the user separately confirmed unlocked heads-up, audible/spoken warning, tap-to-open, stop-sound, and acknowledgement behavior.
+- Completed final automated validation with 109 Python tests, Android unit/build/lint, seven dashboard tests, production build, three Playwright tests, secret/schema checks, and repository audit.
+- Hardened teardown against phone heartbeat endpoint re-registration and verified inventory-backed plus fresh read-only `CLEAN` audits.
+- Added complete quick-start, beginner user guide, review-day checklist, academic review package, and final Git/AWS verification report.
+
 ## 2026-10-22 — research evaluation and controlled wireless notification path
 
 - Added a deterministic 320-trial benchmark around the production correlation service and real H3, with 20 positive/negative scenario families, a fixed 60-trial held-out partition, one-to-one event matching, uncertainty intervals, error breakdowns, machine-readable results, and six robustness figures.

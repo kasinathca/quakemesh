@@ -1,5 +1,7 @@
 # QuakeMesh V2 local control-plane completion report
 
+> Historical milestone document. Its dated limitations describe the state at each milestone and are preserved for traceability. The current final status is in `QM-V2-FINAL-DEMO-VALIDATION.md` and `QM-V2-FINAL-REVIEW-VERIFICATION.md`.
+
 Report date: 2026-10-06 (Asia/Calcutta)
 
 ## Outcome

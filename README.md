@@ -5,7 +5,7 @@ Academic cloud-computing project · AWS serverless backend · H3 spatial indexin
 
 > **Important scope statement:** QuakeMesh is an experimental software prototype. A “confirmed event” means the configured cloud corroboration rules were satisfied. It is **not** an official earthquake declaration, does not estimate magnitude or epicentre, and is not validated for life-safety use.
 
-> **V2 engineering status:** the local control plane, real-H3 detector, React dashboard, Android client, and session-scoped AWS pipeline have been verified on the current Windows host. The historical 48-trial benchmark is preserved, and a separate challenging research benchmark plus recorded smartphone human-activity gate evaluation are implemented. A secure operator-only controlled-notification lifecycle is locally validated but still requires a new authorized AWS/physical-phone run. Live session `qm-20261019-112257-b77a` remains the prior cloud evidence; its final 96-resource inventory audit is `CLEAN`. Android 15 did not show an automatic heads-up overlay, and full-screen intent is intentionally not requested. Automatic expiry did not complete at its scheduled time; guarded manual STOP remains the verified cleanup path. See [`docs/v2/QM-V2-RESEARCH-EVALUATION.md`](docs/v2/QM-V2-RESEARCH-EVALUATION.md), [`docs/v2/QM-V2-AWS-PIPELINE-REPAIR.md`](docs/v2/QM-V2-AWS-PIPELINE-REPAIR.md), and [`docs/v2/QM-V2-OFFLINE-EVALUATION-AND-ANDROID-WARNINGS.md`](docs/v2/QM-V2-OFFLINE-EVALUATION-AND-ANDROID-WARNINGS.md).
+> **V2 engineering status (verified 2026-10-24):** the local control plane, real-H3 detector, interactive Local/AWS Scenario Lab, React dashboard, Android client, session-scoped AWS pipeline, and wireless SNS/FCM alert path are complete for the academic demonstration. Session `qm-20261023-190030-20bc` verified a USB-disconnected cloud scenario through authoritative Android acknowledgement, including locked-screen full-screen warning behavior. On an unlocked home screen, the user personally observed a heads-up notification with audible sound and spoken warning; tapping it opened the warning screen, **Stop Alert Sound** stopped attention output, and **Acknowledge** completed the cloud record. This is not described as automatic unlocked-screen takeover. Guarded manual STOP remains the required cleanup path and the final audit is `CLEAN`. See the [final demo validation](docs/v2/QM-V2-FINAL-DEMO-VALIDATION.md), [quick start](docs/v2/QM-V2-QUICK-START.md), and [complete user guide](docs/v2/QM-V2-COMPLETE-USER-GUIDE.md).
 
 ## What is implemented
 
@@ -22,7 +22,7 @@ This repository contains the verified local V2 system, the Android V2 client fou
 - strongly consistent correctness-first correlator with versioned conditional event writes;
 - H3 Detection Footprint and Warning Frontier;
 - MQTT alert dispatch for simulator Things;
-- optional Amazon SNS → Firebase Cloud Messaging path for Android;
+- Amazon SNS → Firebase Cloud Messaging delivery to an explicitly opted-in physical Android drill recipient;
 - API Gateway REST API, with API-key-gated write fallback and public read-only dashboard endpoints;
 - EventBridge scheduled event resolution plus a one-time, exact-session expiry cleanup backstop;
 - CloudWatch Lambda error alarms and X-Ray tracing;
@@ -215,23 +215,17 @@ Expected high-level behavior:
 
 Simulator truth remains only in simulator trace metadata and is never sent to the detector. Controlled evidence carries its authoritative run ID. Physical propagation changes `observed_at_ms`; simulated network jitter delays delivery instead of falsifying observation time.
 
-## AWS V2 deployment
+## AWS V2 review session
 
-The source and CDK template are implemented and locally synthesized, but a live deployment has not been performed on this host. Review `docs/v2/QM-V2-AWS-IMPLEMENTATION.md`, then verify the intended AWS account before creating billable resources.
-
-First complete local setup and validation, then verify AWS credentials:
+The V2 stack has been deployed and verified in account `101541767123`, region `ap-south-1`. For review use the guarded launchers instead of assembling the lifecycle manually:
 
 ```powershell
-aws sts get-caller-identity
+.\PREPARE_QUAKEMESH_REVIEW.cmd
+.\START_QUAKEMESH_REVIEW.cmd
+.\STATUS_QUAKEMESH_REVIEW.cmd
 ```
 
-Deploy an isolated, expiring session into Mumbai by default:
-
-```powershell
-.\aws\scripts\deploy.ps1 -Region ap-south-1 -DurationMinutes 120
-```
-
-The deploy script performs the important platform-sensitive work automatically:
+PREPARE validates the complete repository without deploying a session. START creates or safely reuses one owned session, starts the local dashboard at `http://127.0.0.1:8080`, starts the AWS dashboard at `http://127.0.0.1:8081`, runs cloud smoke/warm-up checks, builds the Android APK, and installs it when exactly one authorized phone is attached. The lifecycle performs the platform-sensitive work automatically:
 
 - builds the H3 Lambda layer as a **manylinux x86-64 CPython 3.12** artifact even when run from Windows;
 - creates an isolated CDK Python environment;
@@ -241,28 +235,9 @@ The deploy script performs the important platform-sensitive work automatically:
 
 The exported runtime file is gitignored because it contains the controlled-demo API key.
 
-Use the session ID printed by deploy to run the real API smoke path:
+The AWS dashboard exposes real cloud Scenario Lab controls, run history, gate telemetry, devices, events, alerts, acknowledgement, maps, infrastructure, evaluation artifacts, and session state. Cloud export is intentionally unavailable because evidence is retained in DynamoDB. The detector-configuration panel is local-only. Virtual scenario devices publish isolated synthetic evidence; the physical phone supplies the reference H3 location and receives a labeled drill only after explicit opt-in.
 
-```powershell
-.\.venv\Scripts\python.exe aws\scripts\smoke_test.py --config artifacts\aws-v2\<session-id>\runtime-config.json
-```
-
-Provision 25 exact-session simulator Things/certificates and run a real IoT scenario:
-
-```powershell
-.\aws\scripts\provision_simulators.ps1 -SessionId <session-id> -Count 25
-.\aws\scripts\run_aws_scenario.ps1 -SessionId <session-id> -Scenario distributed -Devices 25
-```
-
-The AWS scenario path is MQTT-only so simulator traffic is stored as scenario provenance. HTTPS ingress is reserved for physical Android observations and refuses a scenario run header. Traces remain local under the ignored session artifact directory; the V2 stack intentionally creates no retained archive bucket.
-
-Serve the same dashboard in honest cloud mode:
-
-```powershell
-.\scripts\run_dashboard.ps1 -Port 8080 -ConfigPath artifacts\aws-v2\<session-id>\runtime-config.json
-```
-
-The header shows `AWS V2 Demo`, region, connection, and session state. Device/event/alert/ACK views use the real cloud API; unsupported cloud scenario/history/config controls show unavailable states.
+Always finish with `STOP_QUAKEMESH_REVIEW.cmd` and require `CLEAN`. See the complete user guide for exact operating and recovery instructions.
 
 ## Firebase / Android
 
@@ -293,7 +268,7 @@ The Android project is intentionally modern rather than based on stale templates
 - Firebase BoM 34.18.0;
 - google-services Gradle plugin 4.5.0.
 
-The Gradle wrapper is restored. On 2026-10-08 the current Windows host successfully ran 5 focused `testDebugUnitTest` parser/contract tests plus `assembleDebug` and `lintDebug`; this verifies JVM contract behavior, compilation, packaging, and static Android checks, not emulator, physical sensor/location, network, or FCM behavior.
+The final Windows validation ran the Android JVM suite plus `assembleDebug` and `lintDebug`. Physical Motorola Android 15 testing verified heartbeat/H3 registration, USB-disconnected SNS/FCM delivery, unlocked heads-up presentation, locked-screen full-screen presentation, audible and spoken warning observed by the user, Stop Alert Sound, authoritative acknowledgement, and duplicate suppression. Broader device coverage and real-earthquake validity are not claimed.
 
 ## AWS resources
 
@@ -358,7 +333,7 @@ Release validation includes:
 
 A real-H3 integration test is included. If `h3` is unavailable, that one test explicitly skips; after `scripts/setup.ps1` on your PC it should execute rather than skip.
 
-AWS deployment, Firebase delivery, and physical-device behavior remain environment/account-dependent and are reported as separate observations. The controlled live session verified the specific cloud and handset behaviors documented above; it does not establish production reliability, automatic full-screen display, real-earthquake accuracy, or life-safety suitability. See `VALIDATION_REPORT.md` for current evidence and exact boundaries.
+AWS deployment, Firebase delivery, and physical-device behavior remain environment/account-dependent and are reported as separate observations. The final live session verified the named cloud/handset path, including locked-screen full-screen presentation and unlocked heads-up behavior; it does not establish production reliability, automatic unlocked-screen takeover, broad-device compatibility, real-earthquake accuracy, or life-safety suitability. See `docs/v2/QM-V2-FINAL-DEMO-VALIDATION.md` for the current evidence boundary.
 
 Reproduce the controlled synthetic evaluation without AWS:
 

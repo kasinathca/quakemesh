@@ -28,4 +28,14 @@ Controlled live FCM receipt is verified for the named physical device and sessio
 
 Data-only FCM messages of type `QUAKEMESH_CONTROLLED_TEST` are now parsed as non-authoritative controlled tests. The app reports `FCM_RECEIVED` when the Firebase callback runs, `NOTIFICATION_POSTED` after submitting the notification to Android, and `OPENED` when the tap destination starts. Receipts carry the stable test-message ID and physical device ID to the current session API. The visible title is exactly **CONTROLLED TEST — NOT AN EARTHQUAKE ALERT**. The controlled channel, stable delivery deduplication, notification permission, tap navigation, and no-full-screen policy remain intact.
 
-JVM tests and Android lint/build validate the payload model and application code locally. No new live SNS/FCM send or USB-disconnected handset run was performed for this revision; those states must remain unverified until an authorized AWS session and physical phone are available.
+JVM tests and Android lint/build validated the payload model and application code locally at that dated boundary.
+
+## Final authoritative drill validation — 2026-10-24
+
+The earlier limitations above are historical milestone statements. The final implementation now requests `USE_FULL_SCREEN_INTENT`, declares a locked-screen/screen-wake warning activity, and uses a foreground media-playback attention service for alarm-category tone, spoken warning, and vibration requests. The warning provides **ACKNOWLEDGE / DISMISS**, **STOP ALERT SOUND**, and **Dismiss** as distinct operations. Stable alert identity is retained across cloud dispatch, FCM parsing, presentation, receipts, acknowledgement, and duplicate suppression.
+
+Session `qm-20261023-190030-20bc` verified a Motorola Edge 40 Neo physical handset as the current H3 reference and opted-in drill recipient. Virtual devices supplied all scenario evidence. With USB disconnected, an authoritative distributed scenario produced `FCM_RECEIVED`, `NOTIFICATION_POSTED`, `AUDIO_STARTED`, `OPENED`, and `AUDIO_STOPPED`, followed by `ACKNOWLEDGED` from Android. Locked/screen-off testing verified wake and full-screen presentation over the keyguard.
+
+The user additionally confirmed that, while unlocked on the home screen and still disconnected from USB, Android displayed a heads-up notification with audible sound and spoken warning. Tapping it opened the full warning; **Stop Alert Sound** worked; then acknowledgement completed. This is the verified unlocked behavior and must not be restated as automatic full-screen takeover.
+
+Remaining limitations are broad-device coverage, formal TalkBack/accessibility testing, and process-recreation testing. DND/silent-mode audible bypass and physical vibration strength are outside the final review scope.

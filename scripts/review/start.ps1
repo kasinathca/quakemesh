@@ -38,7 +38,7 @@ function Ensure-Process {
 }
 
 $branch = (& git branch --show-current).Trim()
-if ($branch -notin @("feature/android-v2", "codex/android-v2-research-notifications")) { throw "Review START requires feature/android-v2 or codex/android-v2-research-notifications; current branch is $branch." }
+if ($branch -notin @("main", "feature/android-v2", "codex/android-v2-research-notifications")) { throw "Review START requires main, feature/android-v2, or codex/android-v2-research-notifications; current branch is $branch." }
 $readinessPath = Join-Path $paths.Review "readiness.json"
 if (!(Test-Path -LiteralPath $readinessPath)) { throw "Run scripts/review/prepare.ps1 once before START." }
 $aws = Get-ReviewAwsContext -Profile $Profile -Region $Region -AwsCliPath $AwsCliPath

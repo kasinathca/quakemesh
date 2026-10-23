@@ -130,6 +130,12 @@ def test_setup_checks_native_process_exit_codes():
     assert "Invoke-Checked" in text
 
 
+def test_review_launchers_allow_synchronized_main_branch():
+    for relative in ("scripts/review/prepare.ps1", "scripts/review/start.ps1"):
+        text = (ROOT / relative).read_text(encoding="utf-8")
+        assert '"main", "feature/android-v2", "codex/android-v2-research-notifications"' in text
+
+
 def test_teardown_rechecks_session_sns_endpoints_after_stack_destroy():
     text = (ROOT / "aws/scripts/destroy.ps1").read_text(encoding="utf-8")
     assert "function Remove-ExactSessionSnsEndpoints" in text

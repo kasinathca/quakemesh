@@ -2,7 +2,7 @@
 
 ## One-time preparation
 
-Use Windows with the repository on `feature/android-v2` or `codex/android-v2-research-notifications`. AWS CLI v2 must authenticate profile `quakemesh-demo`; the scripts resolve the account through STS and refuse the root identity. Double-click `PREPARE_QUAKEMESH_REVIEW.cmd`, or run:
+Use Windows with the repository on `main`, `feature/android-v2`, or `codex/android-v2-research-notifications`. AWS CLI v2 must authenticate profile `quakemesh-demo`; the scripts resolve the account through STS and refuse the root identity. Double-click `PREPARE_QUAKEMESH_REVIEW.cmd`, or run:
 
 ```powershell
 .\scripts\review\prepare.ps1 -Bootstrap
@@ -23,7 +23,9 @@ Double-click `START_QUAKEMESH_REVIEW.cmd`. A successful run ends with `QUAKEMESH
 
 Suggested order: show Local V2 and the distributed H3 footprint/frontier; show Android monitoring if a phone is present; show AWS V2, API Gateway/Lambda/DynamoDB/IoT/CloudWatch in the console; run the AWS scenario; show the confirmed event and alerts.
 
-For the phone-centered wireless drill: install once over USB, open the app, grant ordinary notification/location permission, enable **Receive nearby simulated-drill alerts**, and start monitoring. Confirm the app reports a current H3 cell and full-screen permission status, then unplug USB. In the AWS dashboard open Scenario Lab, choose **Distributed earthquake**, leave 25 devices selected, and press **Start**. The phone is only the coarse geographic reference and opted-in notification recipient; all scenario evidence comes from separately identified virtual devices. A safe **Reset** clears the selected run only after execution finishes and retains cloud evidence.
+For the phone-centered wireless drill: install once over USB, open the app, grant notification/location permission, use **Enable / disable simulated-drill alerts** until the status is `OPTED IN`, and start monitoring. Confirm the app reports a current H3 cell and full-screen permission status, then unplug USB. In the AWS dashboard open Scenario Lab, choose **Distributed corroboration**, leave 25 devices selected, and press **Start**. The phone is only the coarse geographic reference and opted-in notification recipient; all scenario evidence comes from separately identified virtual devices. A safe **Reset** clears the selected dashboard run only after execution finishes and retains cloud evidence.
+
+On the verified unlocked home-screen path, Android showed a heads-up notification with audible sound and spoken warning. The user tapped the notification to open the full warning, stopped attention output, and acknowledged it. Do not describe this as automatic unlocked-screen takeover. With the phone locked/screen-off and urgent-alert permission allowed, the full-screen warning was verified over the keyguard.
 
 START uses ports 8000, 8080, and 8081. It refuses an unrelated listener instead of killing it. The local and AWS dashboard copies have independent ignored `config.js` files. No connected Android device is acceptable: the APK remains ready. Exactly one authorized device is updated with `adb install -r`; multiple devices require manual selection. Firebase is optional.
 
@@ -39,4 +41,4 @@ STOP is idempotent. Run it again if uncertain. Do not accept the session as fini
 
 State is stored under ignored `artifacts/review/`. START reconciles state with AWS, reuses one healthy owned session, removes stale metadata for an absent stack, and refuses multiple or ambiguously tagged stacks. A Scheduler expiry is a crash/forgotten-stop backstop; manual STOP is primary.
 
-The session defaults to 180 minutes and uses serverless/on-demand services. AWS execution is not guaranteed to cost zero. The live lifecycle matrix completed in account `101541767123`, region `ap-south-1`; the later successful session `qm-20261019-112257-b77a` also verified physical heartbeat/H3, provenance-isolated physical evidence, endpoint registration, and controlled FCM receipt. Automatic expiry remains a separate unverified path: that session did not disappear on schedule and required guarded manual STOP. Always require a final `CLEAN` report.
+The session defaults to 180 minutes and uses serverless/on-demand services. AWS execution is not guaranteed to cost zero. Final session `qm-20261023-190030-20bc` verified phone-centered interactive scenarios, USB-disconnected authoritative SNS/FCM delivery, locked-screen presentation, duplicate suppression, Stop Alert Sound, and Android acknowledgement. Its inventory-backed teardown and a fresh 2026-10-24 audit were `CLEAN`. Automatic expiry remains a separate unverified path; manual STOP is primary. Always require a final `CLEAN` report.

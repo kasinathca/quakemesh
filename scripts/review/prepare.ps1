@@ -10,7 +10,7 @@ $paths = Initialize-ReviewDirectories
 Set-Location $paths.Root
 
 $branch = (& git branch --show-current).Trim()
-if ($branch -notin @("feature/android-v2", "codex/android-v2-research-notifications")) { throw "Review preparation requires feature/android-v2 or codex/android-v2-research-notifications; current branch is $branch." }
+if ($branch -notin @("main", "feature/android-v2", "codex/android-v2-research-notifications")) { throw "Review preparation requires main, feature/android-v2, or codex/android-v2-research-notifications; current branch is $branch." }
 $python = Join-Path $paths.Root ".venv\Scripts\python.exe"
 if (!(Test-Path -LiteralPath $python)) { throw "Python environment missing. Run scripts/setup.ps1 first." }
 foreach ($command in @("node", "npm", "npx", "java")) {

@@ -1,6 +1,6 @@
 # QuakeMesh V2 requirements traceability
 
-Status reflects evidence generated through 2026-10-19. Local tests, synthetic evaluation, live AWS processing, physical Android behavior, controlled FCM receipt, and real-world seismological validity remain distinct evidence scopes.
+Status reflects evidence generated through 2026-10-24. Local tests, synthetic evaluation, live AWS processing, physical Android behavior, wireless FCM delivery, and real-world seismological validity remain distinct evidence scopes.
 
 | Requirement | Implementation | Evidence | Status |
 |---|---|---|---|
@@ -12,10 +12,10 @@ Status reflects evidence generated through 2026-10-19. Local tests, synthetic ev
 | V2-FR-006 stage telemetry | scenario service + detector stages | negative-stage, sequence, SSE-resume tests | VERIFIED locally |
 | V2-FR-007 local control API | FastAPI V2 envelope/endpoints | API integration and browser tests | VERIFIED locally |
 | V2-FR-008 local parity reads | typed local endpoints | API surface integration test | VERIFIED locally |
-| V2-FR-009 dashboard | React/TypeScript/Vite modules + Local/AWS adapters, capability states, Evaluation/Metrics exports | 7 unit tests, build, 2 local E2E tests, live STATUS reads | VERIFIED locally and for live AWS reads; live browser ACK interaction pending |
-| V2-FR-010 Android V2 | typed client, monitoring, alert-ID FCM, warning/demo channels, WarningActivity, dedupe, guarded ACK | 12 JVM tests, Firebase APK/build/lint, physical install/launch, heartbeat/H3/evidence, controlled FCM receipt | VERIFIED for named handset/session; automatic heads-up not observed, full-screen intentionally disabled, authoritative handset ACK pending |
+| V2-FR-009 dashboard | React/TypeScript/Vite modules + Local/AWS adapters, cloud Scenario Lab/history/reset, Evaluation/Metrics exports | 7 unit tests, build, 3 local E2E tests, live AWS scenario operation/reads | VERIFIED locally and in final live AWS session |
+| V2-FR-010 Android V2 | typed client, monitoring, alert-ID FCM, warning/demo channels, full-screen WarningActivity, attention service, dedupe, receipts and guarded ACK | JVM tests, Firebase APK/build/lint, heartbeat/H3, USB-disconnected authoritative FCM, unlocked heads-up, locked full-screen, stop/ACK | VERIFIED for named handset/session; broader device/accessibility coverage pending |
 | V2-FR-011 AWS session ownership | session stack name, tags, expiry metadata, scoped names/topics, destroy policies, one-time Scheduler cleanup with ownership refusal checks | source tests, synth, live sessions, final inventory audit | VERIFIED live for manual lifecycle; automatic expiry did not complete on time |
-| V2-FR-012 AWS teardown/verifier | account/tag guard, exact IoT/SNS cleanup, exact stack destroy, concrete inventory verification | live CLEAN reports plus repeated 96-resource audit | VERIFIED live for manual teardown |
+| V2-FR-012 AWS teardown/verifier | account/tag guard, exact IoT/SNS cleanup including post-destroy endpoint-race closure, exact stack destroy, concrete inventory verification | final inventory-backed CLEAN plus fresh 2026-10-24 audit | VERIFIED live for manual teardown |
 | V2-FR-013 local evidence export | ScenarioControlService export | privacy/export test + browser E2E | VERIFIED locally |
 | V2-FR-014 local reset | transactional scenario-only reset | active refusal/physical preservation tests | VERIFIED locally |
 | V2-NFR-001 truthful status | TARGETED alerts, gate/status vocabulary | API, service, E2E assertions | VERIFIED locally |

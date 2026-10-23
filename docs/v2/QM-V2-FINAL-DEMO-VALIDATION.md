@@ -36,11 +36,11 @@ Replaying the final DND run's DynamoDB stream image left the existing physical a
 | Test | Evidence | Result |
 |---|---|---|
 | App open, screen on | `WarningActivity` became the resumed activity after real FCM delivery. | PASS |
-| App background, screen on | High-importance notification with STOP ALERT action was visible over the launcher. | PASS |
+| App background, screen on | User observed a heads-up notification over the unlocked home screen; tapping it opened the warning activity. | PASS |
 | App not in foreground | FCM receipt and foreground attention-service audio receipt were persisted. | PASS |
 | Phone locked / screen off | Device changed from dozing/screen-off to awake; keyguard remained showing and was occluded by `WarningActivity`. | PASS |
 | Full-screen presentation | Dark-red `SIMULATED EARTHQUAKE` UI rendered over the locked keyguard; `canUseFullScreenIntent()` was allowed. | PASS |
-| Normal sound | Alarm-category looping player requested exclusive transient audio focus; perceptual loudness requires human confirmation. | NOT VERIFIED perceptually |
+| Normal sound and speech | Machine receipts recorded `AUDIO_STARTED`; the user heard the alert sound and spoken warning during the USB-disconnected unlocked-phone run. | PASS on named handset/session |
 | Silent ringer | With ringer mode temporarily silent, delivery and `AUDIO_STARTED` succeeded on the alarm stream; original mode was restored. | PASS for execution; NOT VERIFIED perceptually |
 | Do Not Disturb | Under total-silence DND, delivery, notification posting and alarm-stream focus request succeeded; DND was restored to off. Channel DND bypass remained false because no special policy access was silently granted. | PASS for compliant behavior; NOT VERIFIED audible bypass |
 | Vibration | Repeating waveform was configured and invoked; physical sensation requires human confirmation. | NOT VERIFIED perceptually |
@@ -50,6 +50,10 @@ Replaying the final DND run's DynamoDB stream image left the existing physical a
 | Acknowledgement | Locked-screen run became `ACKNOWLEDGED` with source `android`; `AUDIO_STOPPED` was recorded. | PASS |
 
 The app never changes ringer or DND settings. Test-only ADB changes were bounded and restored to baseline (`mode_ringer=2`, `zen_mode=0`).
+
+### User-observed unlocked-phone result
+
+After the machine-recorded run, the user confirmed the perceptual path with USB disconnected and the phone unlocked on its home screen: a heads-up notification appeared with audible sound and spoken warning; tapping the notification opened the full-screen warning activity; **Stop Alert Sound** stopped the warning output; and **Acknowledge** completed the alert workflow. This verifies the observed audible/spoken and control behavior for the named handset and session. It does **not** mean the unlocked phone automatically switched to full-screen—the user opened the warning by tapping the heads-up notification.
 
 ## Automated regression evidence
 
@@ -66,3 +70,5 @@ Ignored device screenshots and replay payloads are retained under `artifacts/rev
 ## Cleanup result
 
 `scripts/review/stop.ps1` destroyed the exact owned stack and the final verifier returned `CLEAN`: all session Things, certificates, endpoints, tables, functions, logs, alarms, roles, schedules, API Gateway resources, keys, plans, and secrets were absent. The first verification correctly detected one SNS endpoint recreated by the still-monitoring phone during teardown; deleting that exact endpoint produced the final clean result. The destroy workflow now repeats marker-scoped endpoint deletion after stack removal to close that race. Shared `CDKToolkit` and the reusable SNS platform application were intentionally retained.
+
+A fresh read-only audit on 2026-10-24 re-authenticated account `101541767123` in `ap-south-1` and again found zero active QuakeMesh session stacks, zero exact-session Things/certificates/SNS endpoints, and zero session-named DynamoDB, Lambda, layer, API Gateway, IAM, EventBridge, CloudWatch, or Secrets Manager resources. Two stale DynamoDB stream tag-index entries were ignored only after their parent tables were independently confirmed absent. No cleanup action was required.

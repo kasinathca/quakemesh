@@ -4,11 +4,11 @@ Status date: 2026-10-08 (Asia/Calcutta)
 
 ## Status
 
-The AWS V2 serverless foundation is implemented and locally synthesized. It is not live-deployed: this host currently has no AWS CLI, authenticated account identity, deployed endpoint, or live CloudWatch/DynamoDB evidence. The retained V1 stack must not be used as a V2 substitute.
+This 2026-10-08 foundation statement was superseded by later live validation. The AWS V2 serverless system is implemented and has been repeatedly deployed in account `101541767123`, region `ap-south-1`. Final session `qm-20261023-190030-20bc` verified interactive AWS Scenario Lab execution, production H3 corroboration, USB-disconnected authoritative SNS/FCM delivery, Android receipts/acknowledgement, and exact-session CLEAN teardown. The detailed evidence is in `QM-V2-FINAL-DEMO-VALIDATION.md`.
 
 ## Architecture
 
-Each demo is an isolated CloudFormation stack named `QuakeMesh-V2-Demo-<session-id>`. The stack owns API Gateway, six Lambdas (API, ingress, correlator, dispatcher, resolver, expiry cleanup), four on-demand DynamoDB tables, two IoT rules, a session-specific IoT policy, an EventBridge resolution schedule, a one-time EventBridge Scheduler cleanup target, explicit one-week Lambda log groups, X-Ray tracing, and error alarms. No EC2, VPC, NAT Gateway, RDS, ECS, EKS, or retained S3 bucket is created.
+Each demo is an isolated CloudFormation stack named `QuakeMesh-V2-Demo-<session-id>`. The current stack owns API Gateway, seven Lambdas (API, ingress, correlator, dispatcher, resolver, scenario runner, and expiry cleanup), five on-demand DynamoDB tables (device, evidence, event, alert, and scenario/run state), two IoT rules, a session-specific IoT policy, an EventBridge resolution schedule, a one-time EventBridge Scheduler cleanup target, explicit one-week Lambda log groups, X-Ray tracing, and error alarms. No EC2, VPC, NAT Gateway, RDS, ECS, EKS, or retained S3 bucket is created.
 
 HTTPS from Android is physical provenance. AWS IoT simulator topics are session-specific and are stored as scenario provenance with the session ID as the run partition. Correlation queries only the inserted evidence partition, and active event merging and alert targeting retain the same provenance/run boundary. Observation payloads remain schema `1.0`; API responses use V2 envelopes.
 
@@ -30,7 +30,7 @@ Success and error bodies match the local V2 envelope and carry `X-Request-ID`. T
 
 ## DynamoDB ownership and data
 
-The stack owns `DeviceState`, `Evidence`, `Events`, and `AlertDelivery` tables. Device keys include provenance/run/device identity. Evidence time buckets also include provenance and run, preventing physical/scenario cross-corroboration. Evidence uses a short TTL; all tables use `RemovalPolicy.DESTROY` and are deleted with the exact session stack. Event and alert records include session and provenance metadata.
+The stack owns device-state, evidence, event, alert-delivery, and scenario/run-state tables. Device keys include provenance/run/device identity. Evidence time buckets also include provenance and run, preventing physical/scenario cross-corroboration. Evidence uses a short TTL; all tables use `RemovalPolicy.DESTROY` and are deleted with the exact session stack. Event, alert, and run records include session and provenance metadata.
 
 ## Observability
 
@@ -81,7 +81,7 @@ After deployment, serve the same dashboard against the real session endpoint:
   -ConfigPath artifacts\aws-v2\<session-id>\runtime-config.json
 ```
 
-The ignored production `config.js` receives the demo API URL/key, region, session, and expiry. The UI labels the environment `AWS V2 Demo`, reads real device/event/alert data, supports the real ACK route, and shows API connection/session state. Local-only Scenario Lab, experiment history, detector configuration, reset, export, and SSE telemetry are explicitly unavailable in AWS mode rather than fabricated. Starting without `-ConfigPath` resets the dashboard to Local V2 configuration.
+The ignored production `config.js` receives the demo API URL/key, region, session, and expiry. The UI labels the environment `AWS V2 Demo`, reads real device/event/alert/run data, controls the real AWS Scenario Lab, displays experiment history/stages, supports safe selection reset and the real ACK route, and shows API connection/session state. Local evidence-file export and detector-configuration reads remain unavailable in AWS mode. Starting without `-ConfigPath` resets the dashboard to Local V2 configuration.
 
 ## Cost and current limitations
 

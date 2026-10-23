@@ -2,7 +2,7 @@
 
 **Baseline:** V1 academic prototype  
 **Cloud region:** `ap-south-1`  
-**Status:** implementation baseline  
+**Status:** V2 academic-review release
 **Scope rule:** this set ends at `QM-OPS-001`; do not create endless new design documents unless a controlled update is required.
 
 ## Reading order
@@ -25,6 +25,15 @@
 V2 operational supplement: `v2/QM-V2-AWS-PIPELINE-REPAIR.md` records both October 2026 warm-up failures, the DynamoDB Streams readiness repair, durable diagnostics, and the approval-gated live verification procedure.
 
 V2 evaluation supplement: `v2/QM-V2-OFFLINE-EVALUATION-AND-ANDROID-WARNINGS.md` defines the reproducible synthetic batch methodology, measured confusion matrix, dashboard exports, Android warning channels, local preview, and full-screen-intent limitation.
+
+Final V2 review documents:
+
+- `v2/QM-V2-QUICK-START.md` — short review-day startup and wireless demonstration path.
+- `v2/QM-V2-COMPLETE-USER-GUIDE.md` — beginner-oriented setup, operation, troubleshooting, and cleanup tutorial.
+- `v2/QM-V2-REVIEW-DAY-CHECKLIST.md` — printable presentation checklist.
+- `v2/QM-V2-ACADEMIC-REVIEW-PACKAGE.md` — architecture, methodology, results, limitations, and presentation content.
+- `v2/QM-V2-FINAL-DEMO-VALIDATION.md` — final AWS/Android/wireless evidence.
+- `v2/QM-V2-FINAL-REVIEW-VERIFICATION.md` — Git and fresh AWS CLEAN audit.
 
 Tracked evaluation evidence: `../results/offline-evaluation/` contains the sanitized report, aggregate summary, per-trial CSV, robustness table, and SVG figures generated from seed `20261019`.
 

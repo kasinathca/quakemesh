@@ -39,7 +39,9 @@ flowchart LR
   CORR --> EVT[(Events)]
   EVT --> DISP[Dispatcher Lambda]
   DISP -->|MQTT| SIM
-  DISP -->|SNS/FCM optional| PHONE
+  DISP -->|SNS/FCM| PHONE
+  PHONE -->|receipts / acknowledgement| APIGW
+  DASH[AWS dashboard / Scenario Lab] --> APIGW
   EXP[Session expiry] --> CLEAN[Restricted cleanup]
   CLEAN --> STACK[Exact session stack deletion]
 ```
@@ -75,6 +77,8 @@ sequenceDiagram
 ```
 
 Local and AWS adapters must implement the same public schemas; storage and transport details may differ.
+
+In the final phone-centered AWS scenario, the registered physical phone supplies the reference H3 cell and is an explicitly opted-in simulated-drill recipient. The scenario runner creates distinct virtual devices around that reference; only those virtual identities provide synthetic scenario evidence. After confirmation, the dispatcher selects the physical phone through the footprint/frontier policy, SNS/FCM transports the labeled drill, and Android posts delivery/attention/open receipts plus an optional authoritative acknowledgement.
 
 Local correlation is partitioned by `(provenance_type, scenario_run_id)`. Physical records use `physical` plus a null run ID; every controlled run uses `scenario` plus its run ID. The same partition applies to active-event merging and alert targeting. SQLite `BEGIN IMMEDIATE` makes the one-active-run policy atomic.
 

@@ -1,6 +1,6 @@
 # QuakeMesh V2 research evaluation and controlled wireless delivery
 
-**Status:** offline implementation validated; live AWS and physical-device validation not run for this revision
+**Status:** the benchmark in this document is offline by design. Later final-system AWS and physical-device validation is recorded separately in `QM-V2-FINAL-DEMO-VALIDATION.md`; the scopes are not combined into an accuracy claim.
 
 ## Architecture and change boundary
 
