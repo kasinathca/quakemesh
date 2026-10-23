@@ -130,6 +130,13 @@ def test_setup_checks_native_process_exit_codes():
     assert "Invoke-Checked" in text
 
 
+def test_teardown_rechecks_session_sns_endpoints_after_stack_destroy():
+    text = (ROOT / "aws/scripts/destroy.ps1").read_text(encoding="utf-8")
+    assert "function Remove-ExactSessionSnsEndpoints" in text
+    assert text.count("Remove-ExactSessionSnsEndpoints") == 3  # definition plus pre/post destroy calls
+    assert text.rindex("Remove-ExactSessionSnsEndpoints") > text.index('"destroy", $StackName, "--force"')
+
+
 def test_dashboard_launcher_uses_named_parameter_splatting():
     demo = (ROOT / "scripts" / "demo_local.ps1").read_text(encoding="utf-8")
     helper = (ROOT / "scripts" / "process_helpers.ps1").read_text(encoding="utf-8")

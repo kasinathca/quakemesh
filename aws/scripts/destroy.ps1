@@ -76,18 +76,20 @@ elseif (($stackProbe.Output -join " ") -notmatch 'does not exist|ValidationError
 }
 $RootPy = Join-Path $Root ".venv\Scripts\python.exe"
 if (!(Test-Path $RootPy)) { throw "Run .\scripts\setup.ps1 first." }
+function Remove-ExactSessionSnsEndpoints {
+  if (!(Test-Path -LiteralPath $ConfigPath)) { return }
+  $deleteEndpointArguments = @("aws/scripts/delete_sns_endpoints.py", "--config", $ConfigPath)
+  if ($Profile) { $deleteEndpointArguments += @("--profile", $Profile) }
+  & $RootPy @deleteEndpointArguments
+  if ($LASTEXITCODE -ne 0) { throw "Exact-session SNS endpoint cleanup failed." }
+}
 $ThingPrefix = "QM-$SessionId-SIM-"
 $CertDir = Join-Path $SessionDir "iot-devices"
 $deleteDeviceArguments = @("aws/scripts/delete_devices.py", "--region", $Region, "--prefix", $ThingPrefix, "--cert-dir", $CertDir, "--discover")
 if ($Profile) { $deleteDeviceArguments += @("--profile", $Profile) }
 & $RootPy @deleteDeviceArguments
 if ($LASTEXITCODE -ne 0) { throw "Exact-session IoT device cleanup failed." }
-if (Test-Path -LiteralPath $ConfigPath) {
-  $deleteEndpointArguments = @("aws/scripts/delete_sns_endpoints.py", "--config", $ConfigPath)
-  if ($Profile) { $deleteEndpointArguments += @("--profile", $Profile) }
-  & $RootPy @deleteEndpointArguments
-  if ($LASTEXITCODE -ne 0) { throw "Exact-session SNS endpoint cleanup failed." }
-}
+Remove-ExactSessionSnsEndpoints
 
 $Infra = Join-Path $Root "aws\infrastructure"
 $CdkVenv = Join-Path $Infra ".venv-cdk"
@@ -97,6 +99,12 @@ Invoke-CdkPathSafe -InfraDirectory $Infra -CdkVenv $CdkVenv -AwsCliPath $AwsCli 
   "destroy", $StackName, "--force"
 ))
 if ($Profile) { $env:AWS_PROFILE = $Profile }
+
+# A still-monitoring phone can race the pre-destroy cleanup by registering its
+# token again while API Gateway and the ingress Lambda are still reachable.
+# Once the stack is absent, repeat the exact marker-scoped deletion before
+# verification so no endpoint can be recreated by this session.
+Remove-ExactSessionSnsEndpoints
 
 # A scheduled Lambda can recreate its log group after CloudFormation deletes
 # the explicit LogGroup but before the rule/function deletion finishes. Remove

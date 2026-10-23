@@ -63,6 +63,6 @@ The app never changes ringer or DND settings. Test-only ADB changes were bounded
 
 Ignored device screenshots and replay payloads are retained under `artifacts/review/device-evidence/`. They contain no AWS credentials. Session runtime configuration remains ignored and must not be committed.
 
-## Cleanup requirement
+## Cleanup result
 
-The session is evidence only until `scripts/review/stop.ps1` destroys the exact owned resources. The work is complete only after the teardown report says `CLEAN`; shared `CDKToolkit` and the reusable SNS platform application are intentionally retained.
+`scripts/review/stop.ps1` destroyed the exact owned stack and the final verifier returned `CLEAN`: all session Things, certificates, endpoints, tables, functions, logs, alarms, roles, schedules, API Gateway resources, keys, plans, and secrets were absent. The first verification correctly detected one SNS endpoint recreated by the still-monitoring phone during teardown; deleting that exact endpoint produced the final clean result. The destroy workflow now repeats marker-scoped endpoint deletion after stack removal to close that race. Shared `CDKToolkit` and the reusable SNS platform application were intentionally retained.
