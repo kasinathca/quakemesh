@@ -3,6 +3,7 @@ package com.quakemesh.app
 import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.app.NotificationManager
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -15,6 +16,8 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.provider.Settings
+import android.net.Uri
 import android.view.Gravity
 import android.view.View
 import android.widget.Button
@@ -99,6 +102,8 @@ class MainActivity : Activity() {
             "sensor" to "Sensor state",
             "location" to "Location state",
             "heartbeat" to "Latest heartbeat",
+            "demo_opt_in" to "Simulated-drill alerts",
+            "full_screen" to "Full-screen permission",
         )))
         content.addView(section("LOCAL MOTION OBSERVED", listOf(
             "motion" to "Device observation",
@@ -128,9 +133,17 @@ class MainActivity : Activity() {
         acknowledgeButton = actionButton("Acknowledge latest alert", Color.rgb(150, 54, 45)) { acknowledgeLatest() }
         val previewButton = actionButton("Preview local controlled notification", Color.rgb(154, 91, 24)) { previewNotification() }
         val warningTonePreviewButton = actionButton("Preview warning tone (controlled test)", Color.rgb(150, 54, 45)) { previewNotification(useWarningTone = true) }
+        val optInButton = actionButton("Enable / disable simulated-drill alerts", Color.rgb(150, 54, 45)) {
+            DemoAlertPreferences.setOptedIn(this, !DemoAlertPreferences.isOptedIn(this)); render()
+        }
+        val permissionButton = actionButton("Open urgent-alert permission settings", Color.rgb(73, 86, 98)) { openAlertSettings() }
+        val dndButton = actionButton("Open Do Not Disturb access settings", Color.rgb(73, 86, 98)) { startActivity(Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS)) }
         actions.addView(startButton)
         actions.addView(stopButton, marginTop(dp(8)))
         actions.addView(acknowledgeButton, marginTop(dp(8)))
+        actions.addView(optInButton, marginTop(dp(8)))
+        actions.addView(permissionButton, marginTop(dp(8)))
+        actions.addView(dndButton, marginTop(dp(8)))
         if (BuildConfig.DEBUG) actions.addView(previewButton, marginTop(dp(8)))
         if (BuildConfig.DEBUG) actions.addView(warningTonePreviewButton, marginTop(dp(8)))
         content.addView(actions)
@@ -199,6 +212,9 @@ class MainActivity : Activity() {
         }
         values["location"]?.text = snapshot.locationState
         values["heartbeat"]?.text = formatTime(snapshot.latestHeartbeatAtMs)
+        values["demo_opt_in"]?.text = if (DemoAlertPreferences.isOptedIn(this)) "OPTED IN — phone may receive labeled simulation drills" else "Disabled"
+        val manager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+        values["full_screen"]?.text = if (Build.VERSION.SDK_INT < 34 || manager.canUseFullScreenIntent()) "Allowed" else "Not allowed — urgent heads-up fallback will be used"
         values["motion"]?.text = if (snapshot.localMotionAtMs == null) "No threshold-crossing motion observed" else formatTime(snapshot.localMotionAtMs)
         values["motion_metrics"]?.text = if (snapshot.localMotionRms == null) "RMS / peak —" else String.format(
             Locale.US, "RMS %.2f m/s² · peak %.2f m/s²", snapshot.localMotionRms, snapshot.localMotionPeak,
@@ -258,6 +274,17 @@ class MainActivity : Activity() {
         val missing = permissions.filter { checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED }
         if (missing.isNotEmpty()) requestPermissions(missing.toTypedArray(), PERMISSION_REQUEST)
     }
+
+    private fun openAlertSettings() {
+        val action = if (Build.VERSION.SDK_INT >= 34) Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT else Settings.ACTION_APP_NOTIFICATION_SETTINGS
+        val intent = Intent(action).apply {
+            if (Build.VERSION.SDK_INT >= 34) data = Uri.parse("package:$packageName") else putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
+        }
+        startActivity(intent)
+    }
+
+    override fun onResume() { super.onResume(); AppVisibility.foreground = true; render() }
+    override fun onPause() { AppVisibility.foreground = false; super.onPause() }
 
     private fun startMonitoring() {
         if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {

@@ -22,10 +22,13 @@ def test_iot_policy_is_thing_scoped():
 
 def test_https_writes_require_api_key():
     s = (ROOT / "aws/infrastructure/stack.py").read_text()
-    assert s.count("api_key_required=True") == 5
+    assert s.count("api_key_required=True") == 8
     assert "OperatorApiKey" in s
     assert 'api_fn.add_environment("QM_OPERATOR_SECRET_ARN", operator_secret.secret_arn)' in s
     assert "operator_secret.grant_read(api_fn)" in s
+    assert 'demo.add_resource("scenario-runs").add_method("POST", integration, api_key_required=True)' in s
+    assert 'demo.add_resource("reset").add_method("POST", integration, api_key_required=True)' in s
+    assert 'resources=[platform_arn, endpoint_arn]' in s
 
 
 def test_aws_v2_stack_is_session_owned_and_destroyable():
@@ -88,6 +91,7 @@ def test_android_physical_firebase_contract_is_explicit_and_not_scenario_tagged(
     api = (ROOT / "android/app/src/main/java/com/quakemesh/app/ApiClient.kt").read_text(encoding="utf-8")
     sensor = (ROOT / "android/app/src/main/java/com/quakemesh/app/SensorService.kt").read_text(encoding="utf-8")
     messaging = (ROOT / "android/app/src/main/java/com/quakemesh/app/QuakeMessagingService.kt").read_text(encoding="utf-8")
+    attention = (ROOT / "android/app/src/main/java/com/quakemesh/app/AlertAttentionService.kt").read_text(encoding="utf-8")
     presentation = (ROOT / "android/app/src/main/java/com/quakemesh/app/AlertPresentation.kt").read_text(encoding="utf-8")
     assert 'applicationId = "com.quakemesh.app"' in gradle
     assert 'pluginManager.apply("com.google.gms.google-services")' in gradle
@@ -101,6 +105,8 @@ def test_android_physical_firebase_contract_is_explicit_and_not_scenario_tagged(
     assert 'PREFS = "quakemesh_alert_dedupe"' in presentation
     assert "context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)" in presentation
     assert "ApiClient.acknowledge" not in messaging  # acknowledgement remains an explicit UI action
+    assert "if (player != null || tts != null) releaseAttention(recordReceipt = true)" in attention
+    assert "focusRequest = null" in attention
 
 
 def test_secret_paths_are_gitignored():

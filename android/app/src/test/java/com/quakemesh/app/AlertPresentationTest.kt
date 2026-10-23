@@ -24,7 +24,7 @@ class AlertPresentationTest {
 
     @Test fun warningMonitoringAndDemoChannelsAreVersionedAndDistinct() {
         assertEquals(3, setOf(NotificationHelper.ALERT_CHANNEL, NotificationHelper.DEMO_CHANNEL, NotificationHelper.MONITOR_CHANNEL).size)
-        assertTrue(NotificationHelper.ALERT_CHANNEL.endsWith("_v2"))
+        assertTrue(NotificationHelper.ALERT_CHANNEL.endsWith("_v3"))
         assertTrue(NotificationHelper.DEMO_CHANNEL.endsWith("_v1"))
     }
 
@@ -39,11 +39,11 @@ class AlertPresentationTest {
         assertTrue(NotificationPermissionPolicy.requiresRuntimePermission(33))
     }
 
-    @Test fun authoritativeTapContractUsesHeadsUpFallbackAndKeepsAck() {
+    @Test fun authoritativeAlertRequestsFullScreenAndKeepsHeadsUpFallbackAndAck() {
         val presentation = AlertPresentationPolicy.forAlert(alert())
         assertEquals(NotificationHelper.ALERT_CHANNEL, presentation.channelId)
         assertTrue(presentation.canAcknowledge)
-        assertFalse(presentation.requestFullScreen)
+        assertTrue(presentation.requestFullScreen)
     }
 
     @Test fun controlledWarningToneRemainsNonAuthoritative() {

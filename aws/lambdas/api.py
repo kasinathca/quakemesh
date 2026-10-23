@@ -4,7 +4,9 @@ import json
 import hmac
 import os
 import re
+import uuid
 from decimal import Decimal
+from urllib.parse import unquote
 
 from botocore.exceptions import ClientError
 from boto3.dynamodb.conditions import Attr
@@ -18,9 +20,18 @@ from .ingress import process
 _geo = None
 _operator_credential = None
 sns = boto3.client("sns")
+lambda_client = boto3.client("lambda")
 secretsmanager = boto3.client("secretsmanager")
 CONTROLLED_TEST_LABEL = "CONTROLLED TEST — NOT AN EARTHQUAKE ALERT"
 _TEST_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{7,79}$")
+
+AWS_SCENARIOS = {
+    "isolated": ("Isolated shaking", "NO_CONFIRMATION"),
+    "same-cell": ("Same-cell movement", "NO_CONFIRMATION"),
+    "distributed": ("Distributed earthquake", "CONFIRMATION"),
+    "degraded": ("Degraded network", "CONDITIONAL"),
+    "false-positive": ("False-positive demonstration", "NO_CONFIRMATION"),
+}
 
 
 def _geo_index():
@@ -98,6 +109,121 @@ def _find_physical_device(device_id: str) -> dict | None:
         if not last_key:
             return None
         kwargs["ExclusiveStartKey"] = last_key
+
+
+def _latest_reference_device() -> dict | None:
+    rows = _items("QM_DEVICE_TABLE", 1000)
+    current = now_ms()
+    eligible = [
+        row for row in rows
+        if row.get("provenance_type") == "physical"
+        and row.get("h3_cell")
+        and current - int(row.get("last_seen_ms", 0)) <= 120_000
+    ]
+    return max(eligible, key=lambda row: int(row.get("last_seen_ms", 0)), default=None)
+
+
+def _scenario_view(row: dict) -> dict:
+    clean = _clean(row)
+    clean.pop("reference_device_id", None)
+    clean.pop("reference_h3_cell", None)
+    return clean
+
+
+def _scenario_catalog() -> list[dict]:
+    common = [
+        {"name": "devices", "type": "integer", "default": 25, "minimum": 4, "maximum": 100, "unit": "devices"},
+        {"name": "seed", "type": "integer", "default": 42, "minimum": 0, "maximum": 2147483647, "unit": "integer"},
+        {"name": "trigger_propagation_interval_ms", "type": "integer", "default": 70, "minimum": 0, "maximum": 1000, "unit": "milliseconds"},
+    ]
+    result = []
+    for scenario_id, (title, expected) in AWS_SCENARIOS.items():
+        params = list(common)
+        if scenario_id == "degraded":
+            params += [
+                {"name": "packet_loss_fraction", "type": "number", "default": 0.25, "minimum": 0, "maximum": 0.95, "unit": "fraction"},
+                {"name": "network_jitter_ms", "type": "integer", "default": 900, "minimum": 0, "maximum": 5000, "unit": "milliseconds"},
+            ]
+        result.append({"id": scenario_id, "title": title, "purpose": "Cloud execution using the registered phone H3 cell as the geographic reference.", "expected_result": expected, "catalog_version": "2.1", "supported_parameters": params})
+    return result
+
+
+def _validate_scenario_parameters(scenario: str, supplied: dict) -> dict:
+    definition = next(item for item in _scenario_catalog() if item["id"] == scenario)
+    specs = {item["name"]: item for item in definition["supported_parameters"]}
+    unknown = set(supplied) - set(specs)
+    if unknown:
+        raise ValidationError(f"unsupported parameter(s): {', '.join(sorted(unknown))}")
+    normalized = {}
+    for name, spec in specs.items():
+        value = supplied.get(name, spec["default"])
+        if spec["type"] == "integer" and (isinstance(value, bool) or not isinstance(value, int)):
+            raise ValidationError(f"{name} must be an integer")
+        if spec["type"] == "number" and (isinstance(value, bool) or not isinstance(value, (int, float))):
+            raise ValidationError(f"{name} must be a number")
+        if value < spec["minimum"] or value > spec["maximum"]:
+            raise ValidationError(f"{name} must be between {spec['minimum']} and {spec['maximum']}")
+        normalized[name] = Decimal(str(value)) if isinstance(value, float) else value
+    return normalized
+
+
+def _start_scenario(event: dict, request: str) -> dict:
+    payload = json.loads(event.get("body") or "{}")
+    scenario = payload.get("scenario")
+    if scenario not in AWS_SCENARIOS:
+        raise ValidationError("unknown scenario")
+    parameters = _validate_scenario_parameters(str(scenario), payload.get("parameters") or {})
+    reference = _latest_reference_device()
+    if not reference:
+        return failure(request, 409, "PHONE_LOCATION_UNAVAILABLE", "No physical phone has a current registered H3 location. Start monitoring on the phone and retry.")
+    run_id = f"aws-{now_ms()}-{uuid.uuid4().hex[:8]}"
+    timestamp = now_ms()
+    row = {
+        "run_id": run_id, "scenario": scenario, "source": "dashboard", "mode": "AWS",
+        "catalog_version": "2.1", "seed": parameters["seed"], "devices": parameters["devices"],
+        "status": "QUEUED", "expected_result": AWS_SCENARIOS[str(scenario)][1],
+        "observed_result": None, "created_at_ms": timestamp, "started_at_ms": None,
+        "completed_at_ms": None, "updated_at_ms": timestamp, "parameters": parameters,
+        "event_ids": [], "error": None, "reference_device_id": reference["device_id"],
+        "reference_h3_cell": reference["h3_cell"],
+    }
+    table = _table("QM_SCENARIO_TABLE")
+    try:
+        table.put_item(Item={"run_id": "ACTIVE", "active_run_id": run_id, "created_at_ms": timestamp}, ConditionExpression="attribute_not_exists(run_id)")
+        table.put_item(Item=row, ConditionExpression="attribute_not_exists(run_id)")
+    except ClientError as error:
+        if error.response.get("Error", {}).get("Code") == "ConditionalCheckFailedException":
+            return failure(request, 409, "SCENARIO_ALREADY_RUNNING", "Another scenario run is active.")
+        raise
+    lambda_client.invoke(FunctionName=env("QM_SCENARIO_RUNNER_ARN"), InvocationType="Event", Payload=json.dumps({"run_id": run_id}).encode())
+    return success(request, _scenario_view(row), 202)
+
+
+def _reset_scenario(request: str) -> dict:
+    active = _table("QM_SCENARIO_TABLE").get_item(
+        Key={"run_id": "ACTIVE"}, ConsistentRead=True
+    ).get("Item")
+    if active:
+        return failure(
+            request,
+            409,
+            "SCENARIO_ALREADY_RUNNING",
+            "The active scenario must finish before the dashboard can be reset.",
+        )
+    return success(
+        request,
+        {
+            "reset": True,
+            "evidence_retained": True,
+            "message": "Dashboard selection reset; cloud evidence remains available.",
+        },
+    )
+
+
+def _scenario_runs(limit: int) -> list[dict]:
+    rows = [row for row in _items("QM_SCENARIO_TABLE", limit + 1) if row.get("run_id") != "ACTIVE"]
+    rows.sort(key=lambda row: int(row.get("created_at_ms", 0)), reverse=True)
+    return [_scenario_view(row) for row in rows[:limit]]
 
 
 def _controlled_view(row: dict) -> dict:
@@ -239,6 +365,33 @@ def _controlled_receipt(event: dict, request: str) -> dict:
     return success(request, {"test": _controlled_view(existing), "transition_observed": ranks[state] >= existing_rank})
 
 
+def _alert_receipt(event: dict, request: str) -> dict:
+    alert_id = unquote(str((event.get("pathParameters") or {}).get("alert_id") or ""))
+    payload = json.loads(event.get("body") or "{}")
+    device_id = payload.get("device_id")
+    state = payload.get("state")
+    if not alert_id or not isinstance(device_id, str) or not device_id:
+        raise ValidationError("alert_id and device_id are required")
+    if state not in {"FCM_RECEIVED", "NOTIFICATION_POSTED", "OPENED", "AUDIO_STARTED", "AUDIO_STOPPED"}:
+        raise ValidationError("unsupported receipt state")
+    table = _table("QM_ALERT_TABLE")
+    existing = table.get_item(Key={"alert_id": alert_id}, ConsistentRead=True).get("Item")
+    if not existing:
+        return failure(request, 404, "ALERT_NOT_FOUND", "The requested alert was not found.")
+    if existing.get("device_id") != device_id or existing.get("session_id") != env("QM_SESSION_ID"):
+        return failure(request, 409, "ALERT_DEVICE_MISMATCH", "The receipt does not belong to this device and session.")
+    timestamp = now_ms()
+    field = state.lower() + "_at_ms"
+    table.update_item(
+        Key={"alert_id": alert_id},
+        UpdateExpression=f"SET {field}=:now,updated_at_ms=:now,last_receipt_state=:state",
+        ExpressionAttributeValues={":now": timestamp, ":state": state},
+    )
+    existing.update({field: timestamp, "updated_at_ms": timestamp, "last_receipt_state": state})
+    log("ALERT_RECEIPT", request, alert_id=alert_id, device_id=device_id, state=state)
+    return success(request, {"alert": _clean(existing), "transition_created": True})
+
+
 def _bounded_limit(event: dict, default: int, maximum: int) -> int:
     raw = (event.get("queryStringParameters") or {}).get("limit")
     if raw is None:
@@ -285,7 +438,7 @@ def _physical_ingress(event: dict, path: str, request: str) -> dict:
 
 
 def _acknowledge(event: dict, request: str) -> dict:
-    alert_id = str((event.get("pathParameters") or {}).get("alert_id") or "")
+    alert_id = unquote(str((event.get("pathParameters") or {}).get("alert_id") or ""))
     if not alert_id:
         return failure(request, 404, "ALERT_NOT_FOUND", "The requested alert was not found.")
     payload = json.loads(event.get("body") or "{}")
@@ -369,6 +522,8 @@ def handler(event, context):
             for row in rows:
                 row["online"] = current - int(row.get("last_seen_ms", 0)) <= 120_000
                 row["notification_capable"] = bool(row.get("fcm_endpoint_arn"))
+                if row.get("h3_cell"):
+                    row["cell_center"] = list(_geo_index().center(str(row["h3_cell"])))
                 row.pop("fcm_endpoint_arn", None)
             rows.sort(key=lambda item: int(item.get("last_seen_ms", 0)), reverse=True)
             return success(request, {"items": _clean(rows)})
@@ -380,8 +535,28 @@ def handler(event, context):
             rows = _items("QM_ALERT_TABLE", _bounded_limit(event, 200, 2000))
             rows.sort(key=lambda item: int(item.get("created_at_ms", 0)), reverse=True)
             return success(request, {"items": _clean(rows)})
+        if method == "GET" and path == "/v1/scenarios":
+            return success(request, {"items": _scenario_catalog()})
+        if method == "GET" and path == "/v1/scenario-runs":
+            return success(request, {"items": _scenario_runs(_bounded_limit(event, 50, 200))})
+        if method == "GET" and path.startswith("/v1/scenario-runs/"):
+            run_id = str((event.get("pathParameters") or {}).get("run_id") or path.rsplit("/", 1)[-1])
+            row = _table("QM_SCENARIO_TABLE").get_item(Key={"run_id": run_id}, ConsistentRead=True).get("Item")
+            return success(request, _scenario_view(row)) if row else failure(request, 404, "SCENARIO_RUN_NOT_FOUND", "The scenario run was not found.")
+        if method == "GET" and path == "/v1/session":
+            active = _table("QM_SCENARIO_TABLE").get_item(Key={"run_id": "ACTIVE"}, ConsistentRead=True).get("Item")
+            run = None
+            if active:
+                run = _table("QM_SCENARIO_TABLE").get_item(Key={"run_id": active["active_run_id"]}, ConsistentRead=True).get("Item")
+            return success(request, {"mode": "AWS", "active_run": _scenario_view(run) if run else None, "started_at_ms": run.get("started_at_ms") if run else None, "expires_at_ms": None, "session_id": env("QM_SESSION_ID"), "region": os.getenv("AWS_REGION", "unknown")})
+        if method == "POST" and path == "/v1/demo/scenario-runs":
+            return _start_scenario(event, request)
+        if method == "POST" and path == "/v1/demo/reset":
+            return _reset_scenario(request)
         if method == "POST" and path.startswith("/v1/alerts/") and path.endswith("/ack"):
             return _acknowledge(event, request)
+        if method == "POST" and path.startswith("/v1/alerts/") and path.endswith("/receipts"):
+            return _alert_receipt(event, request)
         if method == "POST" and path == "/v1/controlled-tests":
             return _request_controlled_test(event, request)
         if method == "POST" and path.startswith("/v1/controlled-tests/") and path.endswith("/receipts"):

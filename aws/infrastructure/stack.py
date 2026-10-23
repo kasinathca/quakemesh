@@ -100,6 +100,13 @@ class QuakeMeshStack(Stack):
             billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,
             removal_policy=RemovalPolicy.DESTROY,
         )
+        scenario_run = dynamodb.Table(
+            self,
+            "ScenarioRuns",
+            partition_key=dynamodb.Attribute(name="run_id", type=dynamodb.AttributeType.STRING),
+            billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,
+            removal_policy=RemovalPolicy.DESTROY,
+        )
 
         layer_dir = ROOT / "artifacts" / "lambda-layer"
         if not layer_dir.exists():
@@ -143,6 +150,7 @@ class QuakeMeshStack(Stack):
             "QM_EVIDENCE_TABLE": evidence.table_name,
             "QM_EVENT_TABLE": event.table_name,
             "QM_ALERT_TABLE": alert.table_name,
+            "QM_SCENARIO_TABLE": scenario_run.table_name,
             "QM_H3_DEVICE_RESOLUTION": "9",
             "QM_H3_CORRELATION_RESOLUTION": "7",
             "QM_EVIDENCE_WINDOW_MS": "8000",
@@ -203,6 +211,9 @@ class QuakeMeshStack(Stack):
         # The previous 60-second budget was not defensible for a 25-device fleet
         # and is the leading offline explanation for the missed live expiry.
         cleanup = function("CleanupFn", "aws.lambdas.cleanup.handler", 600, 512)
+        scenario_runner = function(
+            "ScenarioRunnerFn", "aws.lambdas.scenario_runner.handler", 60, 512, (h3_layer,)
+        )
         cleanup.add_environment("QM_STACK_NAME", self.stack_name)
         cleanup.add_environment("QM_IOT_POLICY_NAME", policy_name)
 
@@ -212,11 +223,18 @@ class QuakeMeshStack(Stack):
         evidence.grant_write_data(api_fn)
         event.grant_read_data(api_fn)
         alert.grant_read_write_data(api_fn)
+        scenario_run.grant_read_write_data(api_fn)
         evidence.grant_read_data(correlator)
         event.grant_read_write_data(correlator)
         device.grant_read_data(dispatcher)
         alert.grant_read_write_data(dispatcher)
         event.grant_read_write_data(resolver)
+        device.grant_read_write_data(scenario_runner)
+        evidence.grant_write_data(scenario_runner)
+        event.grant_read_data(scenario_runner)
+        scenario_run.grant_read_write_data(scenario_runner)
+        api_fn.add_environment("QM_SCENARIO_RUNNER_ARN", scenario_runner.function_arn)
+        scenario_runner.grant_invoke(api_fn)
         cleanup.add_to_role_policy(
             iam.PolicyStatement(actions=["cloudformation:DeleteStack"], resources=[self.stack_id])
         )
@@ -313,7 +331,9 @@ class QuakeMeshStack(Stack):
                 )
             for fn in (dispatcher, api_fn):
                 fn.add_to_role_policy(
-                    iam.PolicyStatement(actions=["sns:Publish"], resources=[endpoint_arn])
+                    # SNS authorizes mobile endpoint publication against both the
+                    # endpoint and its owning platform application.
+                    iam.PolicyStatement(actions=["sns:Publish"], resources=[platform_arn, endpoint_arn])
                 )
             cleanup.add_to_role_policy(
                 iam.PolicyStatement(
@@ -441,9 +461,21 @@ class QuakeMeshStack(Stack):
         v1.add_resource("events").add_method("GET", integration)
         alerts = v1.add_resource("alerts")
         alerts.add_method("GET", integration)
-        alerts.add_resource("{alert_id}").add_resource("ack").add_method(
+        alert_item = alerts.add_resource("{alert_id}")
+        alert_item.add_resource("ack").add_method(
             "POST", integration, api_key_required=True
         )
+        alert_item.add_resource("receipts").add_method(
+            "POST", integration, api_key_required=True
+        )
+        v1.add_resource("scenarios").add_method("GET", integration)
+        scenario_runs = v1.add_resource("scenario-runs")
+        scenario_runs.add_method("GET", integration)
+        scenario_runs.add_resource("{run_id}").add_method("GET", integration)
+        v1.add_resource("session").add_method("GET", integration)
+        demo = v1.add_resource("demo")
+        demo.add_resource("scenario-runs").add_method("POST", integration, api_key_required=True)
+        demo.add_resource("reset").add_method("POST", integration, api_key_required=True)
         controlled_tests = v1.add_resource("controlled-tests")
         controlled_tests.add_method("POST", integration, api_key_required=True)
         controlled_tests.add_resource("{test_message_id}").add_resource("receipts").add_method(
@@ -536,6 +568,7 @@ class QuakeMeshStack(Stack):
             "EvidenceTableName": evidence.table_name,
             "EventTableName": event.table_name,
             "AlertTableName": alert.table_name,
+            "ScenarioRunTableName": scenario_run.table_name,
             "Region": self.region,
         }.items():
             CfnOutput(self, key, value=value)

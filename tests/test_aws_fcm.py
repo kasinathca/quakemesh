@@ -59,3 +59,23 @@ def test_controlled_fcm_payload_is_non_authoritative_and_explicitly_labeled(monk
     assert message["data"]["event_id"] == "CONTROLLED-TEST"
     assert message["data"]["title"] == "CONTROLLED TEST — NOT AN EARTHQUAKE ALERT"
     assert "TargetArn" not in message["data"]
+
+
+def test_simulated_drill_fcm_is_explicitly_labeled_and_contains_corroboration(monkeypatch):
+    sns = FakeSns()
+    monkeypatch.setattr(dispatcher, "sns", sns)
+    dispatcher.send_fcm(
+        "arn:aws:sns:ap-south-1:123456789012:endpoint/GCM/quakemesh/phone",
+        {
+            "event_id": "scenario#run-1#event-9", "version": 1, "status": "CONFIRMED",
+            "provenance_type": "scenario", "device_ids": ["v1", "v2", "v3", "v4"],
+            "detection_footprint": ["cell-1", "cell-2", "cell-3"], "warning_frontier": ["cell-4"],
+        },
+        "demo:scenario#run-1#event-9:phone", "phone", 1_700_000_000_000, demo_drill=True,
+    )
+    data = json.loads(json.loads(sns.published["Message"])["GCM"])["fcmV1Message"]["message"]["data"]
+    assert data["title"] == "QUAKEMESH — SIMULATED EARTHQUAKE DRILL"
+    assert data["simulated_drill"] == "true"
+    assert data["provenance_type"] == "scenario"
+    assert data["corroborating_devices"] == "4"
+    assert data["corroborating_cells"] == "3"

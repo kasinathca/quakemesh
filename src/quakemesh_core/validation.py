@@ -104,7 +104,7 @@ def parse_trigger(data: dict[str, Any], transport: str = "unknown") -> Telemetry
 def parse_heartbeat(data: dict[str, Any], transport: str = "unknown") -> DeviceHeartbeat:
     allowed = {
         "schema_version", "device_id", "seq", "observed_at_ms",
-        "latitude", "longitude", "fcm_token",
+        "latitude", "longitude", "fcm_token", "demo_alert_opt_in",
     }
     _reject_unknown(data, allowed)
     if _need(data, "schema_version") != "1.0":
@@ -114,6 +114,9 @@ def parse_heartbeat(data: dict[str, Any], transport: str = "unknown") -> DeviceH
         raise ValidationError("fcm_token must be a string")
     if token is not None and len(token) > 4096:
         raise ValidationError("fcm_token too long")
+    demo_alert_opt_in = data.get("demo_alert_opt_in", False)
+    if not isinstance(demo_alert_opt_in, bool):
+        raise ValidationError("demo_alert_opt_in must be a boolean")
     return DeviceHeartbeat(
         schema_version="1.0",
         device_id=_device_id(_need(data, "device_id")),
@@ -123,6 +126,7 @@ def parse_heartbeat(data: dict[str, Any], transport: str = "unknown") -> DeviceH
         longitude=_lon(_need(data, "longitude")),
         transport=transport,
         fcm_token=token or None,
+        demo_alert_opt_in=demo_alert_opt_in,
     )
 
 

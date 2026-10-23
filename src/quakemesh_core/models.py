@@ -34,6 +34,7 @@ class DeviceHeartbeat:
     longitude: float
     transport: str = "unknown"
     fcm_token: str | None = None
+    demo_alert_opt_in: bool = False
 
 
 @dataclass(frozen=True)

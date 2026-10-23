@@ -6,14 +6,19 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
     <application android:allowBackup="false" android:label="QuakeMesh" android:theme="@style/AppTheme" android:usesCleartextTraffic="false">
-        <activity android:name=".WarningActivity" android:exported="false" android:excludeFromRecents="true" android:showWhenLocked="true" />
+        <activity android:name=".WarningActivity" android:exported="false" android:excludeFromRecents="true" android:showWhenLocked="true" android:turnScreenOn="true" android:theme="@style/WarningTheme" />
         <activity android:name=".MainActivity" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
         <service android:name=".SensorService" android:exported="false" android:foregroundServiceType="location" />
+        <service android:name=".AlertAttentionService" android:exported="false" android:foregroundServiceType="mediaPlayback" />
         <service android:name=".QuakeMessagingService" android:exported="false">
             <intent-filter><action android:name="com.google.firebase.MESSAGING_EVENT" /></intent-filter>
         </service>

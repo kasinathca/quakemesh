@@ -1,6 +1,8 @@
 package com.quakemesh.app
 
 import android.app.NotificationManager
+import android.content.Intent
+import android.os.Build
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 
@@ -36,14 +38,30 @@ class QuakeMessagingService : FirebaseMessagingService() {
                 ?: (alertId.isNotBlank() && !controlledTest),
             controlledTest = controlledTest,
             testMessageId = testMessageId,
+            corroboratingDevices = message.data["corroborating_devices"]?.toIntOrNull(),
+            corroboratingCells = message.data["corroborating_cells"]?.toIntOrNull(),
         )
         MonitoringState.recordAlert(this, alert)
         val title = message.data["title"] ?: message.notification?.title ?: "QuakeMesh corroborated event"
         val body = message.data["body"] ?: message.notification?.body
             ?: "Experimental ground-motion evidence was corroborated across distinct locations."
-        val notification = NotificationHelper.warning(this, title, body, alert)
-        (getSystemService(NOTIFICATION_SERVICE) as NotificationManager)
-            .notify(alert.alertId.hashCode(), notification)
+        if (!controlledTest && alert.authoritativeRecord) {
+            ApiClient.alertReceipt(alert.alertId, deviceId ?: DeviceIdentity.id(this), "FCM_RECEIVED")
+            val attention = AlertAttentionService.startIntent(this, alert, title, body)
+            try {
+                if (Build.VERSION.SDK_INT >= 26) startForegroundService(attention) else startService(attention)
+            } catch (_: Exception) {
+                (getSystemService(NOTIFICATION_SERVICE) as NotificationManager)
+                    .notify(alert.alertId.hashCode(), NotificationHelper.warning(this, title, body, alert))
+            }
+            if (AppVisibility.foreground) {
+                startActivity(WarningActivity.intent(this, alert, title, body).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP))
+            }
+            ApiClient.alertReceipt(alert.alertId, deviceId ?: DeviceIdentity.id(this), "NOTIFICATION_POSTED")
+        } else {
+            val notification = NotificationHelper.warning(this, title, body, alert)
+            (getSystemService(NOTIFICATION_SERVICE) as NotificationManager).notify(alert.alertId.hashCode(), notification)
+        }
         if (controlledTest && !testMessageId.isNullOrBlank() && !deviceId.isNullOrBlank()) {
             ApiClient.controlledTestReceipt(testMessageId, deviceId, "NOTIFICATION_POSTED")
         }

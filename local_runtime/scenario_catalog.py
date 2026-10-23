@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from typing import Any
 
 
-CATALOG_VERSION = "2.0"
+CATALOG_VERSION = "2.1"
 
 
 @dataclass(frozen=True)
@@ -131,6 +131,13 @@ SCENARIOS = {
             "network_jitter_ms",
             "trigger_propagation_interval_ms",
         ),
+    ),
+    "false-positive": ScenarioDefinition(
+        "false-positive",
+        "False-positive demonstration",
+        "Prove that ordinary, temporally uncorrelated motion cannot satisfy quorum.",
+        "NO_CONFIRMATION",
+        ("devices", "seed", "trigger_propagation_interval_ms"),
     ),
 }
 

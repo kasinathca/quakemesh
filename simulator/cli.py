@@ -7,7 +7,7 @@ from .transports import HttpTransport,AwsIotTransport
 
 def main():
     p=argparse.ArgumentParser(description="QuakeMesh deterministic virtual-phone fleet")
-    p.add_argument("--devices",type=int,default=25);p.add_argument("--scenario",choices=["isolated","same-cell","distributed","degraded"],default="distributed")
+    p.add_argument("--devices",type=int,default=25);p.add_argument("--scenario",choices=["isolated","same-cell","distributed","degraded","false-positive"],default="distributed")
     p.add_argument("--center-lat",type=float,default=12.9716);p.add_argument("--center-lon",type=float,default=77.5946);p.add_argument("--seed",type=int,default=42)
     p.add_argument("--transport",choices=["http","mqtt"],default="http");p.add_argument("--base-url",default=os.getenv("QM_API_BASE_URL","http://127.0.0.1:8000"))
     p.add_argument("--api-key",default=os.getenv("QM_API_KEY"));p.add_argument("--iot-endpoint",default=os.getenv("QM_IOT_ENDPOINT"));p.add_argument("--cert-dir",default="artifacts/iot-devices");p.add_argument("--root-ca",default="artifacts/AmazonRootCA1.pem")
@@ -25,7 +25,10 @@ def main():
     fleet=Fleet(Fleet.around(a.devices,a.center_lat,a.center_lon,device_prefix=a.device_prefix),transport,a.seed,trace)
     alerts=0
     try:
-        fleet.scenario(a.scenario)
+        fleet.scenario(a.scenario, {
+            "packet_loss_fraction": getattr(a, "packet_loss_fraction", 0.25),
+            "network_jitter_ms": getattr(a, "network_jitter_ms", 900),
+        })
         if a.transport=="mqtt" and a.alert_wait_seconds>0:
             time.sleep(a.alert_wait_seconds)
             alerts=fleet.collect_transport_alerts()

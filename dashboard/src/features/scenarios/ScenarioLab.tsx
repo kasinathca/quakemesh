@@ -77,7 +77,7 @@ export function ScenarioLab({ control }: { control: ControlPlane }) {
     }
   }, [autoscroll, logs]);
 
-  if (!control.capabilities.scenarioControl) return <Panel title="Scenario Lab" description="Unavailable in the current AWS V2 API slice."><DataState>Run cloud scenarios through the session-scoped AWS IoT simulator command. This dashboard does not fabricate cloud controls or telemetry.</DataState></Panel>;
+  if (!control.capabilities.scenarioControl) return <Panel title="Scenario Lab"><DataState>Scenario control unavailable.</DataState></Panel>;
 
   async function perform(action: () => Promise<unknown>): Promise<void> {
     setActionError(null);
@@ -143,18 +143,18 @@ export function ScenarioLab({ control }: { control: ControlPlane }) {
                   onClick={() => perform(() => control.start(selected.id, parameters))}
                   type="button"
                 ><Play size={16} /> Start</button>
-                <button disabled={isActive} onClick={() => perform(control.reset)} type="button">
+                <button disabled={isActive || !control.capabilities.reset} onClick={() => perform(control.reset)} type="button">
                   <RotateCcw size={16} /> Reset
                 </button>
                 <button
-                  disabled={!run || isActive}
+                  disabled={!run || isActive || !control.capabilities.export}
                   onClick={() => perform(async () => {
                     if (!run) return;
                     const result = await control.exportRun(run.run_id);
                     setExportPath(result.path);
                   })}
                   type="button"
-                ><Download size={16} /> Export evidence</button>
+                ><Download size={16} /> {control.capabilities.export ? "Export evidence" : "Cloud evidence retained"}</button>
               </div>
               {actionError ? <div className="inline-error" role="alert">{actionError}</div> : null}
               {exportPath ? <p className="export-path">Exported to <code>{exportPath}</code></p> : null}
@@ -206,7 +206,7 @@ export function ScenarioLab({ control }: { control: ControlPlane }) {
           ) : <DataState />}
         </Panel>
         <Panel title="Map evolution" description={runEvent ? shortId(runEvent.event_id, 32) : "No confirmed event"}>
-          <EventMap event={runEvent} />
+          <EventMap event={runEvent} devices={(control.snapshot.devices ?? []).filter((device) => device.provenance_type === "physical" || device.scenario_run_id === run?.run_id)} />
         </Panel>
       </div>
 

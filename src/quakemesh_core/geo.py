@@ -9,6 +9,7 @@ class GeoIndex(Protocol):
     def grid_distance(self, a: str, b: str) -> int: ...
     def disk(self, cell: str, k: int) -> set[str]: ...
     def boundary(self, cell: str) -> list[tuple[float, float]]: ...
+    def center(self, cell: str) -> tuple[float, float]: ...
 
 
 class H3GeoIndex:
@@ -38,6 +39,10 @@ class H3GeoIndex:
 
     def boundary(self, cell: str) -> list[tuple[float, float]]:
         return [(float(lat), float(lon)) for lat, lon in self._h3.cell_to_boundary(cell)]
+
+    def center(self, cell: str) -> tuple[float, float]:
+        lat, lon = self._h3.cell_to_latlng(cell)
+        return float(lat), float(lon)
 
 
 class SyntheticGeoIndex:
@@ -75,3 +80,10 @@ class SyntheticGeoIndex:
         p, x, y = cell.split(":"); r=int(p[1:]); scale=10 ** max(0, min(5, r-5)); x=int(x); y=int(y)
         lon=x/scale-180.0; lat=y/scale-90.0; d=0.5/scale
         return [(lat-d,lon-d),(lat-d,lon+d),(lat+d,lon+d),(lat+d,lon-d)]
+
+    def center(self, cell: str) -> tuple[float, float]:
+        points = self.boundary(cell)
+        return (
+            sum(point[0] for point in points) / len(points),
+            sum(point[1] for point in points) / len(points),
+        )

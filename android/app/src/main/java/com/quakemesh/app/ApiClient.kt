@@ -20,10 +20,12 @@ object ApiClient {
         latitude: Double,
         longitude: Double,
         fcmToken: String?,
+        demoAlertOptIn: Boolean,
         callback: (ApiResult<ObservationReceipt>) -> Unit = {},
     ) {
         val body = observation(deviceId, seq, latitude, longitude)
         if (!fcmToken.isNullOrBlank()) body.put("fcm_token", fcmToken)
+        body.put("demo_alert_opt_in", demoAlertOptIn)
         request("POST", "/v1/devices/heartbeat", body, ApiJson::observation, callback)
     }
 
@@ -69,6 +71,14 @@ object ApiClient {
         request("POST", "/v1/controlled-tests/$encodedId/receipts", body, { data ->
             ApiJson.alert(data.getJSONObject("test"))
         }, callback)
+    }
+
+    fun alertReceipt(alertId: String, deviceId: String, state: String) {
+        val encodedId = URLEncoder.encode(alertId, StandardCharsets.UTF_8.toString())
+        val body = JSONObject().put("device_id", deviceId).put("state", state)
+        request("POST", "/v1/alerts/$encodedId/receipts", body, { data ->
+            ApiJson.alert(data.getJSONObject("alert"))
+        }) { }
     }
 
     private fun observation(deviceId: String, seq: Long, latitude: Double, longitude: Double) =

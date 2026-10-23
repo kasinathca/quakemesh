@@ -5,12 +5,14 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
 import android.graphics.Color
 import android.media.AudioAttributes
 import android.net.Uri
+import android.os.Build
 
 object NotificationHelper {
-    const val ALERT_CHANNEL = "quakemesh_warnings_v2"
+    const val ALERT_CHANNEL = "quakemesh_warnings_v3"
     const val DEMO_CHANNEL = "quakemesh_controlled_demo_v1"
     const val MONITOR_CHANNEL = "quakemesh_monitoring_v1"
 
@@ -32,6 +34,7 @@ object NotificationHelper {
             setSound(sound(context, R.raw.quakemesh_warning_v1), alarmAudio)
             lightColor = Color.RED
             enableLights(true)
+            if (manager.isNotificationPolicyAccessGranted) setBypassDnd(true)
         })
         manager.createNotificationChannel(NotificationChannel(DEMO_CHANNEL, "QuakeMesh controlled previews", NotificationManager.IMPORTANCE_HIGH).apply {
             description = "Local, explicitly labeled demonstration previews"
@@ -65,7 +68,12 @@ object NotificationHelper {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
         val detail = "$body\n${presentation.provenanceLabel}\nEvent: ${alert.eventId}\nAlert: ${alert.alertId}"
-        return Notification.Builder(context, channelOverride ?: presentation.channelId)
+        val stop = PendingIntent.getService(
+            context, alert.alertId.hashCode() xor 0x5A5A,
+            Intent(context, AlertAttentionService::class.java).setAction(AlertAttentionService.ACTION_STOP),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+        val builder = Notification.Builder(context, channelOverride ?: presentation.channelId)
             .setSmallIcon(android.R.drawable.ic_dialog_alert)
             .setContentTitle(title)
             .setContentText(body)
@@ -76,8 +84,11 @@ object NotificationHelper {
             .setVisibility(Notification.VISIBILITY_PUBLIC)
             .setAutoCancel(true)
             .setContentIntent(pending)
-            // No fullScreenIntent: this non-alarm/non-calling app uses heads-up fallback.
-            .build()
+            .addAction(Notification.Action.Builder(null, "STOP ALERT", stop).build())
+        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val fullScreenAllowed = Build.VERSION.SDK_INT < 34 || manager.canUseFullScreenIntent()
+        if (presentation.requestFullScreen && fullScreenAllowed) builder.setFullScreenIntent(pending, true)
+        return builder.build()
     }
 
     fun warning(context: Context, title: String, body: String, alert: AlertRecord): Notification =

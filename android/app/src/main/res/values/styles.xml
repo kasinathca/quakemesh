@@ -3,4 +3,7 @@
   <style name="AppTheme" parent="android:style/Theme.Material.Light.NoActionBar">
     <item name="android:fontFamily">sans</item><item name="android:colorAccent">#315EFB</item><item name="android:navigationBarColor">#FFFFFF</item><item name="android:statusBarColor">#FFFFFF</item><item name="android:windowLightStatusBar">true</item>
   </style>
+  <style name="WarningTheme" parent="android:style/Theme.Material.NoActionBar">
+    <item name="android:fontFamily">sans</item><item name="android:windowFullscreen">true</item><item name="android:statusBarColor">#5B0B0B</item><item name="android:navigationBarColor">#260404</item><item name="android:windowLightStatusBar">false</item>
+  </style>
 </resources>

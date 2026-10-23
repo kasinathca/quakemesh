@@ -45,7 +45,7 @@ def targets(cells: list[str], seen_after: int, provenance_type: str, scenario_ru
     return list(found.values())
 
 
-def claim_delivery(event: dict, device: dict) -> bool:
+def claim_delivery(event: dict, device: dict, alert_id_override: str | None = None, demo_drill: bool = False) -> bool:
     """Return True when this invocation should attempt delivery.
 
     SENT is terminal for an event/device pair. DISPATCHING and FAILED are retryable
@@ -57,7 +57,7 @@ def claim_delivery(event: dict, device: dict) -> bool:
     device_id = str(device["device_id"])
     event_id = str(event["event_id"])
     event_version = int(event["version"])
-    alert_id = f"{event_id}:{device_id}"
+    alert_id = alert_id_override or f"{event_id}:{device_id}"
     existing = table.get_item(Key={"alert_id": alert_id}, ConsistentRead=True).get("Item")
     if existing and existing.get("status") == "SENT":
         return False
@@ -84,6 +84,12 @@ def claim_delivery(event: dict, device: dict) -> bool:
             ":transport": str(device.get("transport", "unknown")),
         },
     )
+    if demo_drill:
+        table.update_item(
+            Key={"alert_id": alert_id},
+            UpdateExpression="SET demo_drill=:yes,authoritative_record=:yes,evidence_provenance=:scenario",
+            ExpressionAttributeValues={":yes": True, ":scenario": "scenario"},
+        )
     if event.get("scenario_run_id"):
         table.update_item(
             Key={"alert_id": alert_id},
@@ -110,28 +116,62 @@ def mark(alert_id: str, status: str, detail: str | None = None) -> None:
     )
 
 
-def send_fcm(endpoint_arn: str, event: dict, alert_id: str, device_id: str, created_at_ms: int) -> None:
+def send_fcm(endpoint_arn: str, event: dict, alert_id: str, device_id: str, created_at_ms: int, demo_drill: bool = False) -> None:
+    simulation = demo_drill or str(event.get("provenance_type")) == "scenario"
+    title = "QUAKEMESH — SIMULATED EARTHQUAKE DRILL" if simulation else "QuakeMesh corroborated event"
+    body = (
+        f"Cloud corroborated {len(event.get('device_ids', []))} virtual phones across "
+        f"{len(event.get('detection_footprint', []))} H3 cells."
+        if simulation else "Experimental ground-motion evidence was corroborated across distinct locations."
+    )
+    data = {
+        "type": "QUAKEMESH_WARNING",
+        "alert_id": alert_id,
+        "event_id": str(event["event_id"]),
+        "event_version": str(event["version"]),
+        "status": str(event["status"]),
+        "device_id": device_id,
+        "created_at_ms": str(created_at_ms),
+    }
+    if simulation:
+        data.update({
+            "provenance_type": str(event.get("provenance_type", "scenario")),
+            "authoritative_record": "true",
+            "simulated_drill": "true",
+            "warning_area_h3": ",".join(list(event.get("detection_footprint", [])) + list(event.get("warning_frontier", []))),
+            "corroborating_devices": str(len(event.get("device_ids", []))),
+            "corroborating_cells": str(len(event.get("detection_footprint", []))),
+            "title": title,
+            "body": body,
+        })
     inner = {
         "fcmV1Message": {
             "message": {
-                "data": {
-                    "type": "QUAKEMESH_WARNING",
-                    "alert_id": alert_id,
-                    "event_id": str(event["event_id"]),
-                    "event_version": str(event["version"]),
-                    "status": str(event["status"]),
-                    "device_id": device_id,
-                    "created_at_ms": str(created_at_ms),
-                },
+                "data": data,
                 "android": {"priority": "high"},
             }
         }
     }
     sns.publish(
         TargetArn=endpoint_arn,
-        Message=json.dumps({"GCM": json.dumps(inner), "default": "QuakeMesh alert"}),
+        Message=json.dumps({"GCM": json.dumps(inner), "default": title}),
         MessageStructure="json",
     )
+
+
+def demo_recipients(cells: list[str], seen_after: int) -> list[dict]:
+    table = ddb.Table(env("QM_DEVICE_TABLE"))
+    wanted = set(cells)
+    response = table.scan(
+        ConsistentRead=True,
+        FilterExpression=(
+            Attr("last_seen_ms").gte(seen_after)
+            & Attr("provenance_type").eq("physical")
+            & Attr("demo_alert_opt_in").eq(True)
+            & Attr("fcm_endpoint_arn").exists()
+        ),
+    )
+    return [row for row in response.get("Items", []) if row.get("correlation_cell") in wanted]
 
 
 def handler(event, context):
@@ -199,5 +239,20 @@ def handler(event, context):
             except Exception as exc:
                 mark(alert_id, "FAILED", repr(exc))
                 raise
+        if provenance_type == "scenario":
+            for device in demo_recipients(cells, now - 120_000):
+                device_id = str(device["device_id"])
+                event_id = str(event_item["event_id"])
+                alert_id = f"demo:{event_id}:{device_id}"
+                if not claim_delivery(event_item, device, alert_id, demo_drill=True):
+                    continue
+                try:
+                    send_fcm(str(device["fcm_endpoint_arn"]), event_item, alert_id, device_id, now, demo_drill=True)
+                    mark(alert_id, "SENT")
+                    log("DEMO_ALERT_DELIVERY_COMPLETED", event_id=event_id, alert_id=alert_id, device_id=device_id, scenario_run_id=scenario_run_id)
+                    sent.append(device_id)
+                except Exception as exc:
+                    mark(alert_id, "FAILED", repr(exc))
+                    raise
     log("DISPATCHER_BATCH_COMPLETED", sent_count=len(sent))
     return {"sent": sent}

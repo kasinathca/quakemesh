@@ -204,6 +204,7 @@ def test_dispatcher_eventually_publishes_alert_for_confirmed_event(monkeypatch):
     monkeypatch.setattr(dispatcher, "claim_delivery", lambda *_args: True)
     monkeypatch.setattr(dispatcher, "mark", lambda *args: marks.append(args))
     monkeypatch.setattr(dispatcher, "iot_data", lambda: IoTData())
+    monkeypatch.setattr(dispatcher, "demo_recipients", lambda *_args: [])
     monkeypatch.setenv("QM_SESSION_ID", "session-1")
     event = {
         "event_id": "scenario#session-1#event-1", "version": 1, "status": "CONFIRMED",

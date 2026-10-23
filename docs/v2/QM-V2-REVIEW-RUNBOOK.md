@@ -2,7 +2,7 @@
 
 ## One-time preparation
 
-Use Windows with the repository on `feature/android-v2`. AWS CLI v2 must authenticate profile `quakemesh-demo`; the scripts resolve the account through STS and refuse the root identity. Double-click `PREPARE_QUAKEMESH_REVIEW.cmd`, or run:
+Use Windows with the repository on `feature/android-v2` or `codex/android-v2-research-notifications`. AWS CLI v2 must authenticate profile `quakemesh-demo`; the scripts resolve the account through STS and refuse the root identity. Double-click `PREPARE_QUAKEMESH_REVIEW.cmd`, or run:
 
 ```powershell
 .\scripts\review\prepare.ps1 -Bootstrap
@@ -22,6 +22,8 @@ Double-click `START_QUAKEMESH_REVIEW.cmd`. A successful run ends with `QUAKEMESH
 - AWS distributed demo: `RUN_AWS_DISTRIBUTED_DEMO.cmd`
 
 Suggested order: show Local V2 and the distributed H3 footprint/frontier; show Android monitoring if a phone is present; show AWS V2, API Gateway/Lambda/DynamoDB/IoT/CloudWatch in the console; run the AWS scenario; show the confirmed event and alerts.
+
+For the phone-centered wireless drill: install once over USB, open the app, grant ordinary notification/location permission, enable **Receive nearby simulated-drill alerts**, and start monitoring. Confirm the app reports a current H3 cell and full-screen permission status, then unplug USB. In the AWS dashboard open Scenario Lab, choose **Distributed earthquake**, leave 25 devices selected, and press **Start**. The phone is only the coarse geographic reference and opted-in notification recipient; all scenario evidence comes from separately identified virtual devices. A safe **Reset** clears the selected run only after execution finishes and retains cloud evidence.
 
 START uses ports 8000, 8080, and 8081. It refuses an unrelated listener instead of killing it. The local and AWS dashboard copies have independent ignored `config.js` files. No connected Android device is acceptable: the APK remains ready. Exactly one authorized device is updated with `adb install -r`; multiple devices require manual selection. Firebase is optional.
 

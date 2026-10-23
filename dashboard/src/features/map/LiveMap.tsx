@@ -8,7 +8,7 @@ export function LiveMap({ control }: { control: ControlPlane }) {
   return (
     <div className="page-stack">
       <Panel title="Live event geometry" description="Detection footprint and warning frontier; network tiles are optional.">
-        <EventMap event={event} />
+        <EventMap event={event} devices={control.snapshot.devices ?? []} />
       </Panel>
       <Panel title="Geometry inventory">
         {event ? (

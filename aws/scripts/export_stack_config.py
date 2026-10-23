@@ -50,6 +50,7 @@ def main() -> None:
             "evidence": outputs["EvidenceTableName"],
             "events": outputs["EventTableName"],
             "alerts": outputs["AlertTableName"],
+            "scenario_runs": outputs["ScenarioRunTableName"],
         },
     }
     if outputs.get("SnsPlatformApplicationArn"):

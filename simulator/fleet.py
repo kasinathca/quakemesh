@@ -186,6 +186,24 @@ class Fleet:
                 truth_label="distributed_degraded_network",
             )
             return
+        if name == "false-positive":
+            # Sub-threshold motion is intentionally submitted by distinct phones.
+            # It exercises the real ingress motion gate without creating evidence.
+            base = int(time.time() * 1000)
+            for ordinal, phone in enumerate(self.phones[: min(8, len(self.phones))]):
+                payload = {
+                    "schema_version": "1.0", "device_id": phone.device_id,
+                    "seq": phone.next_seq(), "observed_at_ms": base + ordinal * 25,
+                    "latitude": phone.latitude, "longitude": phone.longitude,
+                    "motion_rms": 0.12, "motion_peak": 0.35,
+                }
+                try:
+                    result = self.transport.trigger(phone.device_id, payload)
+                    self._record("trigger", phone, payload, result, None, {"scenario": "ordinary_motion_negative", "injected": True})
+                except Exception as exc:
+                    self._record("trigger", phone, payload, None, repr(exc), {"scenario": "ordinary_motion_negative", "injected": True})
+            self.flush_trace()
+            return
         raise ValueError(f"unknown scenario: {name}")
 
     def scenario(self, name: str, parameters: dict[str, int | float] | None = None) -> None:

@@ -33,9 +33,7 @@ object AlertPresentationPolicy {
                 AlertKind.LEGACY -> "Legacy message · authority not established"
             },
             headsUp = true,
-            // QuakeMesh is not an alarm-clock or calling app. Android and user
-            // settings remain authoritative; heads-up is the compliant fallback.
-            requestFullScreen = false,
+            requestFullScreen = kind == AlertKind.AUTHORITATIVE_SIMULATION || kind == AlertKind.AUTHORITATIVE_PHYSICAL,
             canAcknowledge = alert.authoritativeRecord && !alert.controlledTest && !alert.alertId.startsWith("legacy:"),
         )
     }
@@ -60,4 +58,15 @@ object AlertDeliveryDeduplicator {
 
 object NotificationPermissionPolicy {
     fun requiresRuntimePermission(sdkInt: Int): Boolean = sdkInt >= 33
+}
+
+object DemoAlertPreferences {
+    private const val PREFS = "quakemesh_demo_alerts"
+    private const val OPTED_IN = "opted_in"
+    fun isOptedIn(context: Context): Boolean = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(OPTED_IN, false)
+    fun setOptedIn(context: Context, value: Boolean) = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean(OPTED_IN, value).apply()
+}
+
+object AppVisibility {
+    @Volatile var foreground: Boolean = false
 }

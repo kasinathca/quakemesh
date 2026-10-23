@@ -22,6 +22,7 @@ export function useControlPlane() {
   const [connection, setConnection] = useState<ConnectionState>("connecting");
   const [error, setError] = useState<string | null>(null);
   const selectedRun = useRef<string | null>(null);
+  const selectionCleared = useRef(false);
   const refreshing = useRef(false);
 
   const refresh = useCallback(async () => {
@@ -30,11 +31,17 @@ export function useControlPlane() {
     try {
       const health = await api.health();
       if (health.mode === "AWS") {
-        const [devices, events, alerts] = await Promise.all([
+        const [devices, events, alerts, scenarios, runs, session] = await Promise.all([
           api.devices(),
           api.events(),
           api.alerts(),
+          api.scenarios(),
+          api.runs(),
+          api.session(),
         ]);
+        const runId = selectedRun.current ?? session.active_run?.run_id ?? (selectionCleared.current ? undefined : runs.items[0]?.run_id);
+        const activeRun = runId ? await api.run(runId) : null;
+        selectedRun.current = activeRun?.run_id ?? null;
         const expiresAt = health.expires_at ? Date.parse(health.expires_at) : null;
         setSnapshot({
           health,
@@ -42,17 +49,10 @@ export function useControlPlane() {
           devices: devices.items,
           events: events.items,
           alerts: alerts.items,
-          scenarios: [],
-          runs: [],
-          session: {
-            mode: "AWS",
-            active_run: null,
-            started_at_ms: null,
-            expires_at_ms: Number.isNaN(expiresAt) ? null : expiresAt,
-            session_id: health.session_id,
-            region: health.region,
-          },
-          activeRun: null,
+          scenarios: scenarios.items,
+          runs: runs.items,
+          session: { ...session, expires_at_ms: Number.isNaN(expiresAt) ? null : expiresAt },
+          activeRun,
           lastUpdated: Date.now(),
         });
       } else {
@@ -66,7 +66,7 @@ export function useControlPlane() {
           api.runs(),
           api.session(),
           ]);
-        const runId = selectedRun.current ?? session.active_run?.run_id ?? runs.items[0]?.run_id;
+        const runId = selectedRun.current ?? session.active_run?.run_id ?? (selectionCleared.current ? undefined : runs.items[0]?.run_id);
         const activeRun = runId ? await api.run(runId) : null;
         selectedRun.current = activeRun?.run_id ?? null;
         setSnapshot({
@@ -113,20 +113,23 @@ export function useControlPlane() {
 
   const start = useCallback(
     async (scenario: string, parameters: Record<string, number>) => {
-      if (snapshot.health?.mode === "AWS") throw new Error("Scenario control is unavailable in AWS V2 mode.");
       const run = await api.start({ scenario, source: "dashboard", parameters });
+      selectionCleared.current = false;
       selectedRun.current = run.run_id;
       setSnapshot((current) => ({ ...current, activeRun: run }));
       await refresh();
       return run;
     },
-    [refresh, snapshot.health?.mode],
+    [refresh],
   );
 
   const reset = useCallback(async () => {
-    if (snapshot.health?.mode === "AWS") throw new Error("Reset is unavailable in AWS V2 mode.");
     await api.reset();
+    selectionCleared.current = true;
     selectedRun.current = null;
+    if (snapshot.health?.mode === "AWS") {
+      setSnapshot((current) => ({ ...current, activeRun: null }));
+    }
     await refresh();
   }, [refresh, snapshot.health?.mode]);
 
@@ -134,6 +137,7 @@ export function useControlPlane() {
 
   const selectRun = useCallback(
     async (run: ScenarioRun) => {
+      selectionCleared.current = false;
       selectedRun.current = run.run_id;
       setSnapshot((current) => ({ ...current, activeRun: run }));
       await refresh();
@@ -161,9 +165,9 @@ export function useControlPlane() {
       return result;
     },
     capabilities: {
-      scenarioControl: !isCloud,
-      scenarioTelemetry: !isCloud,
-      reset: !isCloud,
+      scenarioControl: true,
+      scenarioTelemetry: true,
+      reset: true,
       export: !isCloud,
       cloudReads: isCloud,
       controlledNotifications: isCloud,

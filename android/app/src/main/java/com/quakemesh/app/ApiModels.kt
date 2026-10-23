@@ -39,6 +39,8 @@ data class AlertRecord(
     val authoritativeRecord: Boolean = true,
     val controlledTest: Boolean = false,
     val testMessageId: String? = null,
+    val corroboratingDevices: Int? = null,
+    val corroboratingCells: Int? = null,
 )
 
 data class AcknowledgementReceipt(
@@ -104,6 +106,8 @@ internal object ApiJson {
         authoritativeRecord = value.optBoolean("authoritative_record", true),
         controlledTest = value.optBoolean("controlled_test", false),
         testMessageId = value.optString("test_message_id").ifBlank { null },
+        corroboratingDevices = value.optInt("corroborating_devices").takeIf { value.has("corroborating_devices") },
+        corroboratingCells = value.optInt("corroborating_cells").takeIf { value.has("corroborating_cells") },
     )
 
     private fun JSONObject.optLongOrNull(key: String): Long? =

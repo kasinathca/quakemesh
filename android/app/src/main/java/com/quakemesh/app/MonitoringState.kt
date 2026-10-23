@@ -52,6 +52,8 @@ object MonitoringState {
                 .put("authoritative_record", alert.authoritativeRecord)
                 .put("controlled_test", alert.controlledTest)
                 .put("test_message_id", alert.testMessageId)
+                .put("corroborating_devices", alert.corroboratingDevices)
+                .put("corroborating_cells", alert.corroboratingCells)
                 .toString())
             .apply()
         update(context) { it.copy(latestAlert = alert) }

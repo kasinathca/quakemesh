@@ -144,6 +144,7 @@ class SensorService : Service(), SensorEventListener, LocationListener {
             location.latitude,
             location.longitude,
             token,
+            DemoAlertPreferences.isOptedIn(this),
         ) { result -> updateApiState(result, true) }
     }
 

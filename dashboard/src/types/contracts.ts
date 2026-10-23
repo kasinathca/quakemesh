@@ -112,6 +112,7 @@ export interface EventRecord {
 
 export interface DeviceRecord {
   device_id: string;
+  h3_cell?: string;
   correlation_cell: string;
   last_seen_ms: number;
   last_seq: number;
@@ -120,6 +121,8 @@ export interface DeviceRecord {
   scenario_run_id: string | null;
   online?: boolean;
   notification_capable?: boolean;
+  demo_alert_opt_in?: boolean;
+  cell_center?: [number, number];
 }
 
 export interface ControlledTestRecord {

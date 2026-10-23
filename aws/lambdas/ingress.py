@@ -34,7 +34,7 @@ def _register_fcm(token:str|None)->str|None:
 def _device_key(device_id:str,provenance_type:str,scenario_run_id:str|None)->str:
     return f"{provenance_type}#{scenario_run_id or '-'}#{device_id}"
 
-def _update_device(*,device_id:str,seq:int,observed_at_ms:int,cell:str,coarse:str,transport:str,provenance_type:str,scenario_run_id:str|None,fcm_endpoint_arn:str|None=None)->bool:
+def _update_device(*,device_id:str,seq:int,observed_at_ms:int,cell:str,coarse:str,transport:str,provenance_type:str,scenario_run_id:str|None,fcm_endpoint_arn:str|None=None,demo_alert_opt_in:bool|None=None)->bool:
     table=_ddb.Table(env("QM_DEVICE_TABLE"))
     names={"#ls":"last_seq"}; vals={":s":seq,":ts":observed_at_ms,":c":cell,":cc":coarse,":tr":transport,":id":device_id,":p":provenance_type,":session":env("QM_SESSION_ID")}
     update="SET #ls=:s,last_seen_ms=:ts,h3_cell=:c,correlation_cell=:cc,transport=:tr,device_id=:id,provenance_type=:p,session_id=:session"
@@ -42,6 +42,8 @@ def _update_device(*,device_id:str,seq:int,observed_at_ms:int,cell:str,coarse:st
         update+=",scenario_run_id=:run";vals[":run"]=scenario_run_id
     if fcm_endpoint_arn:
         update+=",fcm_endpoint_arn=:fcm";vals[":fcm"]=fcm_endpoint_arn
+    if demo_alert_opt_in is not None:
+        update+=",demo_alert_opt_in=:optin";vals[":optin"]=demo_alert_opt_in
     try:
         table.update_item(Key={"device_key":_device_key(device_id,provenance_type,scenario_run_id)},UpdateExpression=update,ExpressionAttributeNames=names,ExpressionAttributeValues=vals,ConditionExpression="attribute_not_exists(#ls) OR #ls < :s")
         return True
@@ -54,7 +56,7 @@ def _heartbeat(payload:dict,topic:str|None,transport:str,provenance_type:str,sce
     if topic and _topic_identity(topic,"heartbeat")!=h.device_id: raise ValidationError("topic/device identity mismatch")
     cfg=DetectionConfig.from_env();validate_observation_time(h.observed_at_ms,int(time.time()*1000),cfg.max_clock_skew_ms);cell=geo().cell(h.latitude,h.longitude,cfg.h3_device_resolution);coarse=geo().parent(cell,cfg.h3_correlation_resolution)
     fcm=_register_fcm(h.fcm_token)
-    accepted=_update_device(device_id=h.device_id,seq=h.seq,observed_at_ms=h.observed_at_ms,cell=cell,coarse=coarse,transport=transport,provenance_type=provenance_type,scenario_run_id=scenario_run_id,fcm_endpoint_arn=fcm)
+    accepted=_update_device(device_id=h.device_id,seq=h.seq,observed_at_ms=h.observed_at_ms,cell=cell,coarse=coarse,transport=transport,provenance_type=provenance_type,scenario_run_id=scenario_run_id,fcm_endpoint_arn=fcm,demo_alert_opt_in=h.demo_alert_opt_in if provenance_type == "physical" else None)
     log("HEARTBEAT_PERSISTED",request,device_id=h.device_id,provenance_type=provenance_type,scenario_run_id=scenario_run_id,accepted=accepted)
     return {"accepted":accepted,"device_id":h.device_id,"h3_cell":cell,"correlation_cell":coarse}
 
